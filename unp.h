@@ -20,4 +20,6 @@
 #include <sys/wait.h>
 #include <sys/un.h>     /** for Unix domain sockets */
 
+#define TESTING 1
+
 #endif
