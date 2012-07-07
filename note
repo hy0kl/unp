@@ -1,3 +1,8 @@
 1. netstata -a
 2. 处理信号的函数原型
-    void handler(int signo);
+    ANSI C:
+        void handler(int);
+
+    POSIX SA_SIGINFO:
+        void handler(int, siginfo_t *info, ucontext_t *uap);
+3. 我们可以把某个信号的处置设定为 SIG_IGN 来忽略(ignore)它. SIGKILL 和 SIGSTOP 信号不能忽略. 

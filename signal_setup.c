@@ -9,18 +9,22 @@
 //void handler(int signo, siginfo_t *info, ucontext_t *uap)
 void handler(int signo)
 {
-    fprintf(stderr, "Get one signal: %d, man sigaction.\n", signo);
+    //fprintf(stderr, "[%s %s] Get one signal: %d. man sigaction.\n", __DATE__, __TIME__, signo);
+    fprintf(stderr, "Get one signal: %d. man sigaction.\n", signo);
     return (void)0;
 }
 
 void signal_setup()
 {
     static int signo[] = {
+        SIGHUP,
+        SIGINT,     /* ctrl + c */
         SIGCHLD,
         SIGPIPE,
         SIGALRM,
         SIGUSR1,
         SIGUSR2,
+        SIGTERM,
         //SIGCLD,
 
 #ifdef  SIGTSTP
@@ -90,6 +94,7 @@ int main(int argc, char *argv[])
         rand_num = rand() % 100;
         if (rand_num && rand_num <= percent)
         {
+            //fprintf(stderr, "[%s %s] Good, get it: %d\n", __DATE__, __TIME__, (int)rand_num);
             fprintf(stderr, "Good, get it: %d\n", (int)rand_num);
             usleep((useconds_t)(1000000 - rand_num));
         }
