@@ -19,7 +19,7 @@ void signal_setup()
     static int signo[] = {
         SIGHUP,
         SIGINT,     /* ctrl + c */
-        SIGCHLD,
+        SIGCHLD,    /* 僵死进程或线程的信号 */
         SIGPIPE,
         SIGALRM,
         SIGUSR1,

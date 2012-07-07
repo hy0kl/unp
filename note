@@ -5,4 +5,9 @@
 
     POSIX SA_SIGINFO:
         void handler(int, siginfo_t *info, ucontext_t *uap);
-3. 我们可以把某个信号的处置设定为 SIG_IGN 来忽略(ignore)它. SIGKILL 和 SIGSTOP 信号不能忽略. 
+3. 我们可以把某个信号的处置设定为 SIG_IGN 来忽略(ignore)它. SIGKILL 和 SIGSTOP 信号不能忽略.
+4. 重启被中断的系统调用,对于 accept, read, write, select 和 open 之类的函数来说是合适的.有一个函数不能重启 connect.如果此函数返回 EINTR,不能再次调用它,否则将立即返回一个错误.当 connect 被一个捕获的信号中断而且不自动重启时,必须调用 select 来等待连接完成.
+5. accept 返回前连接中止
+  POSIX 指出返回的 errno 值必须是 ECONNABORTED ("software caused connection abort", 软件引起的连接中止). POSIX 作出的修改的理由在于: 流子系统(streams substystem)中发生某些致命的协议相关事件时,也会返回 EPROTO.要是对于由客户引起的一个已建立连接的非致命中止也返回同样的错误,那么服务器就不知道该不该再次调用 accept,换成 ECONNABORTED 错误,服务器就可以忽略它,再次调用 accept.
+6. 服务器主机崩溃
+  如果客户阻塞在 read 调用上,该调用将返回一个错误.假设服务器主机已崩溃,从而对客户的数据分节根本没有响应,那么所返回的错误是 ETIMEDOT.然而如果某个中间路由器断定服务器主机已不可达,从而响应一个 "destination unreachable"(目的地不可达)ICMP 消息,那么所返回的错误是 EHOSTUNREACH 或 ENETUNREACH.
