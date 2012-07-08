@@ -11,3 +11,31 @@
   POSIX 指出返回的 errno 值必须是 ECONNABORTED ("software caused connection abort", 软件引起的连接中止). POSIX 作出的修改的理由在于: 流子系统(streams substystem)中发生某些致命的协议相关事件时,也会返回 EPROTO.要是对于由客户引起的一个已建立连接的非致命中止也返回同样的错误,那么服务器就不知道该不该再次调用 accept,换成 ECONNABORTED 错误,服务器就可以忽略它,再次调用 accept.
 6. 服务器主机崩溃
   如果客户阻塞在 read 调用上,该调用将返回一个错误.假设服务器主机已崩溃,从而对客户的数据分节根本没有响应,那么所返回的错误是 ETIMEDOT.然而如果某个中间路由器断定服务器主机已不可达,从而响应一个 "destination unreachable"(目的地不可达)ICMP 消息,那么所返回的错误是 EHOSTUNREACH 或 ENETUNREACH.
+7. 时间的结构体
+struct timeval
+{
+    long tv_sec;    /** seconds */
+    long tv_usec;   /** microseconds */
+}
+
+struct timespce
+{
+    time_t tv_sec;  /** seconds */
+    long   tv_nsec; /** nanoseconds */
+}
+
+struct tm {
+    int tm_sec;     /* seconds after the minute [0-60] */
+    int tm_min;     /* minutes after the hour [0-59] */
+    int tm_hour;    /* hours since midnight [0-23] */
+    int tm_mday;    /* day of the month [1-31] */
+    int tm_mon;     /* months since January [0-11] */
+    int tm_year;    /* years since 1900 */
+    int tm_wday;    /* days since Sunday [0-6] */
+    int tm_yday;    /* days since January 1 [0-365] */
+    int tm_isdst;   /* Daylight Savings Time flag */
+    long    tm_gmtoff;  /* offset from CUT in seconds */
+    char    *tm_zone;   /* timezone abbreviation */
+};
+
+typedef long time_t;        /* time value */
