@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/un.h>     /** for Unix domain sockets */
+#include <assert.h>
 
 #define TESTING 1
 

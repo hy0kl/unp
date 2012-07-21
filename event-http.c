@@ -36,6 +36,22 @@
  */
 #define logprintf(format, arg...) fprintf(stderr, "[NOTIC] [%s] "format"\n", __func__, ##arg)
 
+int get_localtime_str(char *src, size_t buf_len)
+{
+    assert(NULL != src);
+    assert(buf_len > 0);
+
+    struct tm* p_tm = NULL;
+    time_t tm = time(NULL);
+    p_tm = localtime(&tm);
+
+    snprintf(src, buf_len, "%d-%02d-%02d %02d:%02d:%02d",
+            p_tm->tm_year + 1900, p_tm->tm_mon + 1, p_tm->tm_mday,
+            p_tm->tm_hour, p_tm->tm_min, p_tm->tm_sec);
+
+    return 0;
+}
+
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
@@ -52,8 +68,9 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
      * 1: json
      * */
     int output_format  = 0;
-    char callback[16] = {0};
     int callback_validate = 0;
+    char callback[16] = {0};
+    char time_str[32] = {0};
 
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
@@ -82,6 +99,8 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
         }
         logprintf("---- end request header ----");
     }
+
+    get_localtime_str(time_str, sizeof(time_str));
 
     //接收GET表单参数name
     const char *http_input_name = evhttp_find_header(&http_query, "name");
@@ -115,10 +134,13 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     {
         evbuffer_add_printf(buf, "%s{\"stat\": 200,\
 \"info\": {\"notice\": \"welcome to libevent word.\",\
-\"version\": \"%s\"\
-}\
+\"version\": \"%s\",\
+\"time\": \"%s\"\
+},\
+\"language\": [\"c\", \"php\", \"javascript\", \"shell\",\
+\"python\", \"lua\", \"css/html\", \"sql\"]\
 }%s", callback_validate ? callback : "", VERSION,
-        callback_validate ? ")" : "");
+        time_str, callback_validate ? ")" : "");
     }
     else
     {
@@ -128,6 +150,7 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
         evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
         evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
         evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
+        evbuffer_add_printf(buf, "Time: %s%s\n", time_str, CRLF);
         evbuffer_add_printf(buf, "</body></html>");
     }
 
