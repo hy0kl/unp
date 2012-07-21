@@ -6,3 +6,4 @@ Description
 Notice
 ------
     alias gw='gcc -g -O2 -Wall -fno-strict-aliasing -Wno-deprecated-declarations -D_THREAD_SAFE'
+    alias gt='gcc -g -finline-functions -Wall -Winline -pipe'
