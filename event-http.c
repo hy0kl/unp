@@ -28,6 +28,13 @@
 
 #define VERSION "1.0"
 #define CRLF    "<br />"
+#define FORMAT_HTML "html"
+#define FORMAT_JSON "json"
+
+/**
+ * #define logprintf(format, arg...) fprintf(stderr, "%s:%d:%s "format"\n", __FILE__, __LINE__, __func__, ##arg)
+ */
+#define logprintf(format, arg...) fprintf(stderr, "[NOTIC] [%s] "format"\n", __func__, ##arg)
 
 /*
  * 处理模块
@@ -40,26 +47,81 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     struct evbuffer *buf;
     buf = evbuffer_new();
 
+    /**
+     * 0: default html
+     * 1: json
+     * */
+    int output_format = 0;
+
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
     struct evkeyvalq http_query;
     evhttp_parse_query(decode_uri, &http_query);
+
+    logprintf("uri: %s", decode_uri);
     free(decode_uri);
+
+    //遍历整个uri的对应关系值
+    {
+        logprintf("--- foreach uri ---");
+        struct evkeyval *header;
+        TAILQ_FOREACH(header, &http_query, next) {
+            logprintf("%s: %s", header->key, header->value);
+        }
+        logprintf("--- end uri ---");
+    }
+    //遍历整个请求头.
+    {
+        logprintf("---- foreach request header ----");
+        struct evkeyvalq *input_headers = evhttp_request_get_input_headers(req);
+        struct evkeyval *header;
+        TAILQ_FOREACH(header, input_headers, next) {
+            logprintf("%s: %s", header->key, header->value);
+        }
+        logprintf("---- end request header ----");
+    }
 
     //接收GET表单参数name
     const char *http_input_name = evhttp_find_header(&http_query, "name");
+    const char *uri_format      = evhttp_find_header(&http_query, "format");
+    //const char *uri_callback    = evhttp_find_header(&http_query, "callback");
+
+    if (uri_format && 0 == strncmp(uri_format, FORMAT_JSON, sizeof(FORMAT_JSON) - 1))
+    {
+        output_format = 1;
+    }
 
     //处理输出header头
-    evhttp_add_header(req->output_headers, "Content-Type", "text/html");
+    if (output_format)
+    {
+        evhttp_add_header(req->output_headers, "Content-Type", "application/x-javascript; charset=UTF-8");
+    }
+    else
+    {
+        evhttp_add_header(req->output_headers, "Content-Type", "text/html; charset=UTF-8");
+    }
     evhttp_add_header(req->output_headers, "Connection", "keep-alive");
     evhttp_add_header(req->output_headers, "Cache-Control", "no-cache");
 
     //处理输出数据
-    evbuffer_add_printf(buf, "<html><body><head>Libevent Http Sever</head><body>");
-    evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
-    evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
-    evbuffer_add_printf(buf, "YOU PASS NAME: %s%s\n", http_input_name, CRLF);
-    evbuffer_add_printf(buf, "</body></html>");
+    if (output_format)
+    {
+        evbuffer_add_printf(buf, "{\"stat\": 200,\
+\"info\": {\"notice\": \"welcome to libevent word.\",\
+\"version\": \"%s\"\
+}\
+}", VERSION);
+    }
+    else
+    {
+        evbuffer_add_printf(buf, "<html><body><head>\
+    <title>Libevent Http Sever</title>\
+    </head><body>");
+        evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
+        evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
+        evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
+        evbuffer_add_printf(buf, "</body></html>");
+    }
 
     //返回code 200
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
