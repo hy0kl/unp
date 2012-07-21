@@ -51,7 +51,9 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
      * 0: default html
      * 1: json
      * */
-    int output_format = 0;
+    int output_format  = 0;
+    char callback[16] = {0};
+    int callback_validate = 0;
 
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
@@ -84,11 +86,16 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     //接收GET表单参数name
     const char *http_input_name = evhttp_find_header(&http_query, "name");
     const char *uri_format      = evhttp_find_header(&http_query, "format");
-    //const char *uri_callback    = evhttp_find_header(&http_query, "callback");
+    const char *uri_callback    = evhttp_find_header(&http_query, "callback");
 
     if (uri_format && 0 == strncmp(uri_format, FORMAT_JSON, sizeof(FORMAT_JSON) - 1))
     {
         output_format = 1;
+    }
+    if (uri_callback && strlen(uri_callback))
+    {
+        snprintf(callback, sizeof(callback), "%s && %s(", uri_callback, uri_callback);
+        callback_validate = 1;
     }
 
     //处理输出header头
@@ -106,17 +113,18 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     //处理输出数据
     if (output_format)
     {
-        evbuffer_add_printf(buf, "{\"stat\": 200,\
+        evbuffer_add_printf(buf, "%s{\"stat\": 200,\
 \"info\": {\"notice\": \"welcome to libevent word.\",\
 \"version\": \"%s\"\
 }\
-}", VERSION);
+}%s", callback_validate ? callback : "", VERSION,
+        callback_validate ? ")" : "");
     }
     else
     {
         evbuffer_add_printf(buf, "<html><body><head>\
-    <title>Libevent Http Sever</title>\
-    </head><body>");
+<title>Libevent Http Sever</title>\
+</head><body>");
         evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
         evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
         evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
