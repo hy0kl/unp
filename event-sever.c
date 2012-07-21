@@ -18,12 +18,12 @@ void time_cd(int fd, short event, void *argc)
         p_tm->tm_year + 1900, p_tm->tm_mon + 1, p_tm->tm_mday,
         p_tm->tm_hour, p_tm->tm_min, p_tm->tm_sec);
     event_add(&ev, &tv);    // reschedule timer
-    
+
     return;
 }
 
 int
-main(int argc, char *argv)
+main(int argc, char *argv[])
 {
     struct event_base *base = event_init();
 
