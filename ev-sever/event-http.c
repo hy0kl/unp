@@ -74,8 +74,11 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     {
         evhttp_add_header(req->output_headers, "Content-Type", "text/html; charset=UTF-8");
     }
+    evhttp_add_header(req->output_headers, "Status", "200 OK");
     evhttp_add_header(req->output_headers, "Connection", "keep-alive");
     evhttp_add_header(req->output_headers, "Cache-Control", "no-cache");
+    evhttp_add_header(req->output_headers, "Expires", "-1");
+    evhttp_add_header(req->output_headers, "Server", "lhs");    /** libevent http server */
 
     //处理输出数据
     if (output_format)
