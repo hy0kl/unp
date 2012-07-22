@@ -27,3 +27,9 @@
 #include <event.h>
 #include <evhttp.h>
 
+#define SIGNO_END 11111
+
+#define GETUTIME(t) ((t.tv_sec) * 1000000 + (t.tv_usec))
+#define GETSTIME(t) (t.tv_sec)
+#define GETMTIME(t) ((((t.tv_sec) * 1000000 + (t.tv_usec))) / 1000)
+

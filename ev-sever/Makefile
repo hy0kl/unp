@@ -12,5 +12,6 @@ $(TARGET) : $(OBJS)
 %.o : %.c
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
+.PHONY: clean
 clean:
 	rm -f $(TARGET) $(OBJS)

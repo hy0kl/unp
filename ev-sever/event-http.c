@@ -1,15 +1,4 @@
-#include "ev_sever.h"
-#include "util.h"
-
-#define VERSION "1.0"
-#define CRLF    "<br />"
-#define FORMAT_HTML "html"
-#define FORMAT_JSON "json"
-
-/**
- * #define logprintf(format, arg...) fprintf(stderr, "%s:%d:%s "format"\n", __FILE__, __LINE__, __func__, ##arg)
- */
-#define logprintf(format, arg...) fprintf(stderr, "[NOTIC] [%s] "format"\n", __func__, ##arg)
+#include "event-http.h"
 
 /*
  * 处理模块
@@ -126,6 +115,16 @@ int main(int argc, char** argv)
     char *proxy_listen = "0.0.0.0";//绑定所有ip
     int proxy_port = 8012;//端口号
     int proxy_settings_timeout = 5; //http请求超时时间
+
+    signal_setup();
+
+#if (DAEMON)
+    if (daemonize(0, 1) == -1)
+    {
+        fprintf(stderr, "failed to daemon() in order to daemonize\n");
+        exit(EXIT_FAILURE);
+    }
+#endif
 
     //初始化监听ip和端口
     event_init();
