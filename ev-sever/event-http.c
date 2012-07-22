@@ -1,4 +1,5 @@
 #include "ev_sever.h"
+#include "util.h"
 
 #define VERSION "1.0"
 #define CRLF    "<br />"
@@ -9,22 +10,6 @@
  * #define logprintf(format, arg...) fprintf(stderr, "%s:%d:%s "format"\n", __FILE__, __LINE__, __func__, ##arg)
  */
 #define logprintf(format, arg...) fprintf(stderr, "[NOTIC] [%s] "format"\n", __func__, ##arg)
-
-int get_localtime_str(char *src, size_t buf_len)
-{
-    assert(NULL != src);
-    assert(buf_len > 0);
-
-    struct tm* p_tm = NULL;
-    time_t tm = time(NULL);
-    p_tm = localtime(&tm);
-
-    snprintf(src, buf_len, "%d-%02d-%02d %02d:%02d:%02d",
-        p_tm->tm_year + 1900, p_tm->tm_mon + 1, p_tm->tm_mday,
-        p_tm->tm_hour, p_tm->tm_min, p_tm->tm_sec);
-
-    return 0;
-}
 
 /*
  * 处理模块

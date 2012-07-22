@@ -4,7 +4,7 @@ GCC = gcc
 GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 
 TARGET = ev-server
-OBJS   = event-http.o
+OBJS   = event-http.o util.o
 
 $(TARGET) : $(OBJS)
 	$(GCC) -g -o $@ $^ $(LIBDIR)
