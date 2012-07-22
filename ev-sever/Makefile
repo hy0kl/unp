@@ -15,3 +15,6 @@ $(TARGET) : $(OBJS)
 .PHONY: clean
 clean:
 	rm -f $(TARGET) $(OBJS)
+
+cleanobj:
+	rm -f $(OBJS)
