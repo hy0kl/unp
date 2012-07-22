@@ -114,37 +114,38 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
 
 int main(int argc, char** argv)
 {
-    struct evhttp *httpd;
-    char *proxy_listen = "0.0.0.0";//绑定所有ip
-    int proxy_port = 8012;//端口号
-    int proxy_settings_timeout = 5; //http请求超时时间
+    struct evhttp *httpd = NULL;
+    char *proxy_listen   = DEFAULT_LISTEN;    //绑定所有ip
+    int proxy_port       = DEFAULT_PORT;      //端口号
+    int proxy_settings_timeout = HTTP_TIMEOUT;     //http请求超时时间
 
     signal_setup();
 
 #if (DAEMON)
-    if (daemonize(0, 1) == -1)
+    if (-1 == daemonize(0, 1))
     {
         fprintf(stderr, "failed to daemon() in order to daemonize\n");
         exit(EXIT_FAILURE);
     }
 #endif
 
-    //初始化监听ip和端口
+    /** 初始化事件 */
     event_init();
+    /** 初始化监听ip和端口 */
     httpd = evhttp_start(proxy_listen, proxy_port);
-    if (httpd == NULL)
+    if (NULL == httpd)
     {
-        fprintf(stderr, "Error: Unable to listen on %s:%d\n\n", proxy_listen, proxy_port);
+        fprintf(stderr, "[Error]: Unable to listen on %s:%d\n", proxy_listen, proxy_port);
         exit(1);
     }
 
-    //设置http连接超时时间
+    // 设置http连接超时时间
     evhttp_set_timeout(httpd, proxy_settings_timeout);
-    //设置请求到达后的回调函数
+    // 设置请求到达后的回调函数
     evhttp_set_gencb(httpd, api_proxy_handler, NULL);
-    //libevent循环处理事件
+    // libevent 循环处理事件
     event_dispatch();
-    //释放资源
+    // 释放资源
     evhttp_free(httpd);
 
     return 0;

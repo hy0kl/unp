@@ -13,3 +13,6 @@
  */
 #define logprintf(format, arg...) fprintf(stderr, "[NOTIC] [%s] "format"\n", __func__, ##arg)
 
+#define HTTP_TIMEOUT    5
+#define DEFAULT_LISTEN  "0.0.0.0"
+#define DEFAULT_PORT    8080
