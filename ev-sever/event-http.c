@@ -3,7 +3,10 @@
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
- * http://localhost:8012/?name=test
+ * http://localhost:DEFAULT_PORT/?name=test
+ * TODO: add getopt() and gconf.
+ * TODO: add lua to create JSON data.
+ * TODO: add log logic.
 */
 void api_proxy_handler(struct evhttp_request *req, void *arg)
 {
@@ -112,8 +115,26 @@ void api_proxy_handler(struct evhttp_request *req, void *arg)
     evbuffer_free(buf);
 }
 
+/**
+ * global variables
+ * */
+config_t gconfig;
+
+static void init_config()
+{
+    gconfig.do_daemonize = 1;
+    gconfig.hostname[0]  = '\0';
+    gconfig.port         = 0;
+    gconfig.timeout      = 0;
+    gconfig.log_level    = 0;
+    gconfig.dict_file[0] = '\0';
+
+    return;
+}
+
 int main(int argc, char** argv)
 {
+    int c;
     struct evhttp *httpd = NULL;
     char *proxy_listen   = DEFAULT_LISTEN;    //绑定所有ip
     int proxy_port       = DEFAULT_PORT;      //端口号
@@ -121,6 +142,27 @@ int main(int argc, char** argv)
 
     signal_setup();
 
+    init_config();
+    /* process arguments */
+    while (-1 != (c = getopt(argc, argv,
+        "d:"  /* work as daemon process */
+        /*"c:"   config file name  */
+        "H:"  /* http hostname -i */
+        "p:"  /* http listen port  */
+        "t:"  /* http timeout */
+        "v:"  /* show version */
+        "l:"  /* log level */
+        "i:"  /* input dict file name */
+        "h:"  /* show usage */
+    )))
+    {
+        switch (c)
+        {
+        case 'd':
+            gconfig.do_daemonize = atoi(optarg);
+            break;
+        }
+    }
 #if (DAEMON)
     if (-1 == daemonize(0, 1))
     {

@@ -33,3 +33,23 @@
 #define GETSTIME(t) (t.tv_sec)
 #define GETMTIME(t) ((((t.tv_sec) * 1000000 + (t.tv_usec))) / 1000)
 
+#define HOST_NAME_LEN   32
+#define FILE_NAME_LEN   128
+
+typedef struct _config_t
+{
+    int do_daemonize;
+    //char *config_file;
+    char hostname[HOST_NAME_LEN];
+    int  port;
+    int  timeout;
+    int  log_level;
+    char dict_file[FILE_NAME_LEN];
+} config_t;
+
+
+/**
+ * global config
+ * */
+extern config_t gconfig;
+
