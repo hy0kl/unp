@@ -136,6 +136,17 @@ static void init_config()
 static void usage()
 {
     printf(PACKAGE " " VERSION "\n");
+    printf("-d [0|1]      cli or run as a daemon\n"
+           "-H <hostname> interface to listen on (default: INADDR_ANY, all addresses)\n"
+           "-p <num>      TCP port number to listen on (default: 8080)\n"
+           "-t <timeout>  set HTTP timeout\n"
+           "-v            show version and help\n"
+           "-l <level>    set log lever\n"
+           "-i <file>     set inverted index file name and path\n"
+           "-x <file>     set index dict file name and path\n"
+           "-j <file>     set lua tpl to create json\n"
+           "-m <file>     set lua tpl to create html\n"
+           "-h            show this help and exit\n");
 
     return;
 }
@@ -158,9 +169,10 @@ int main(int argc, char** argv)
         "H:"  /* http hostname -i */
         "p:"  /* http listen port  */
         "t:"  /* http timeout */
-        "v:"  /* show version */
+        "v"   /* show version */
         "l:"  /* log level */
         "i:"  /* input inverted index file name */
+        "x:"  /* input index dict file name */
         "j:"  /* create JSON by lua tpl */
         "m:"  /* create html by lua tpl */
         "h"  /* show usage */
@@ -172,6 +184,7 @@ int main(int argc, char** argv)
             gconfig.do_daemonize = atoi(optarg);
             break;
 
+        case 'v':
         case 'h':
             usage();
             exit(EXIT_SUCCESS);
