@@ -72,6 +72,7 @@ typedef struct _search_buf_t
 {
     size_t current;
     index_dict_t *dict_data;
+    char **tpl_buf;
 } search_buf_t;
 
 /**
