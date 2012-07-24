@@ -1,5 +1,11 @@
 #include "event-http.h"
 
+/**
+ * global variables
+ * */
+config_t gconfig;
+index_term_t *index_hash_table;
+
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
@@ -115,17 +121,13 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     evbuffer_free(buf);
 }
 
-/**
- * global variables
- * */
-config_t gconfig;
-
 static void init_config()
 {
     gconfig.do_daemonize = 1;
     gconfig.port         = DEFAULT_PORT;
     gconfig.timeout      = HTTP_TIMEOUT;
     gconfig.log_level    = 4;
+    gconfig.max_hash_table_size = MAX_HASH_TABLE_SIZE;
     snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", DEFAULT_LISTEN);
     snprintf(gconfig.inverted_index, FILE_NAME_LEN, "%s", DEFAULT_INVERTED_INDEX);
     snprintf(gconfig.index_dict, FILE_NAME_LEN, "%s", DEFAULT_INDEX_DICT);
@@ -136,9 +138,11 @@ static void init_config()
 static void usage()
 {
     printf(PACKAGE " " VERSION "\n");
+    printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
+    printf("-a <num>      max dict table size(default: %d)\n", MAX_DICT_TABLE_SIZE);
+    printf("-p <num>      TCP port number to listen on (default: %d)\n", DEFAULT_PORT);
     printf("-d [0|1]      cli or run as a daemon\n"
            "-H <hostname> interface to listen on (default: INADDR_ANY, all addresses)\n"
-           "-p <num>      TCP port number to listen on (default: 8080)\n"
            "-t <timeout>  set HTTP timeout\n"
            "-v            show version and help\n"
            "-l <level>    set log lever\n"
@@ -166,6 +170,8 @@ int main(int argc, char** argv)
     /*"c:"   config file name  */
     while (-1 != (c = getopt(argc, argv,
         "d:"  /* work as daemon process */
+        "s:"  /* max hash table size */
+        "a:"  /* max dict table size */
         "H:"  /* http hostname -i */
         "p:"  /* http listen port  */
         "t:"  /* http timeout */

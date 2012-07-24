@@ -19,3 +19,54 @@
 #define DEFAULT_PORT    8080
 #define DEFAULT_INVERTED_INDEX  "./data/inverted_index"
 #define DEFAULT_INDEX_DICT      "./data/index_dict"
+
+#define SIGNO_END 11111
+
+#define GETUTIME(t) ((t.tv_sec) * 1000000 + (t.tv_usec))
+#define GETSTIME(t) (t.tv_sec)
+#define GETMTIME(t) ((((t.tv_sec) * 1000000 + (t.tv_usec))) / 1000)
+
+#define HOST_NAME_LEN   32
+#define FILE_NAME_LEN   128
+
+/** about index query */
+#define SINGLE_INDEX_SIZE   20
+#define MAX_HASH_TABLE_SIZE 127
+#define MAX_DICT_TABLE_SIZE 32
+#define QUERY_LEN   512
+#define BRIEF_LEN   1024 * 10
+
+typedef struct _config_t
+{
+    int do_daemonize;
+    //char *config_file;
+    int  port;
+    int  timeout;
+    int  log_level;
+    int  max_hash_table_size;
+    int  max_dict_table_size;
+    char hostname[HOST_NAME_LEN];
+    char inverted_index[FILE_NAME_LEN];
+    char index_dict[FILE_NAME_LEN];
+} config_t;
+
+typedef unsigned int indext_t;
+typedef struct _index_term_t
+{
+    int size;   /** count(index_chain) */
+    indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
+} index_term_t;
+
+typedef struct _index_dict_t
+{
+    /** use malloc() */
+    char *query;
+    char *brief;
+} index_dict_t;
+
+/**
+ * global
+ * */
+extern config_t      gconfig;
+extern index_term_t *index_hash_table;  /** 倒排表 */
+extern index_dict_t *index_dict_table;  /** 正排表 */
