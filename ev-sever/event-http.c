@@ -160,6 +160,13 @@ static void usage()
     return;
 }
 
+static int load_index()
+{
+    int ret = 0;
+
+    return ret;
+}
+
 /**
  * 申请程序需要的内存空间
  * */
