@@ -8,7 +8,7 @@
  * TODO: add lua to create JSON data.
  * TODO: add log logic.
 */
-void api_proxy_handler(struct evhttp_request *req, void *arg)
+static void api_proxy_handler(struct evhttp_request *req, void *arg)
 {
     //初始化返回客户端的数据缓存
     struct evbuffer *buf;
@@ -123,11 +123,19 @@ config_t gconfig;
 static void init_config()
 {
     gconfig.do_daemonize = 1;
-    gconfig.hostname[0]  = '\0';
-    gconfig.port         = 0;
-    gconfig.timeout      = 0;
-    gconfig.log_level    = 0;
-    gconfig.dict_file[0] = '\0';
+    gconfig.port         = DEFAULT_PORT;
+    gconfig.timeout      = HTTP_TIMEOUT;
+    gconfig.log_level    = 4;
+    snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", DEFAULT_LISTEN);
+    snprintf(gconfig.inverted_index, FILE_NAME_LEN, "%s", DEFAULT_INVERTED_INDEX);
+    snprintf(gconfig.index_dict, FILE_NAME_LEN, "%s", DEFAULT_INDEX_DICT);
+
+    return;
+}
+
+static void usage()
+{
+    printf(PACKAGE " " VERSION "\n");
 
     return;
 }
@@ -144,16 +152,18 @@ int main(int argc, char** argv)
 
     init_config();
     /* process arguments */
+    /*"c:"   config file name  */
     while (-1 != (c = getopt(argc, argv,
         "d:"  /* work as daemon process */
-        /*"c:"   config file name  */
         "H:"  /* http hostname -i */
         "p:"  /* http listen port  */
         "t:"  /* http timeout */
         "v:"  /* show version */
         "l:"  /* log level */
-        "i:"  /* input dict file name */
-        "h:"  /* show usage */
+        "i:"  /* input inverted index file name */
+        "j:"  /* create JSON by lua tpl */
+        "m:"  /* create html by lua tpl */
+        "h"  /* show usage */
     )))
     {
         switch (c)
@@ -161,8 +171,13 @@ int main(int argc, char** argv)
         case 'd':
             gconfig.do_daemonize = atoi(optarg);
             break;
+
+        case 'h':
+            usage();
+            exit(EXIT_SUCCESS);
         }
     }
+
 #if (DAEMON)
     if (-1 == daemonize(0, 1))
     {

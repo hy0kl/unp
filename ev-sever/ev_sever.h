@@ -40,11 +40,12 @@ typedef struct _config_t
 {
     int do_daemonize;
     //char *config_file;
-    char hostname[HOST_NAME_LEN];
     int  port;
     int  timeout;
     int  log_level;
-    char dict_file[FILE_NAME_LEN];
+    char hostname[HOST_NAME_LEN];
+    char inverted_index[FILE_NAME_LEN];
+    char index_dict[FILE_NAME_LEN];
 } config_t;
 
 

@@ -1,6 +1,7 @@
 #include "ev_sever.h"
 #include "util.h"
 
+#define PACKAGE "libevent-http-server"
 #define VERSION "1.0"
 #define CRLF    "<br />"
 #define FORMAT_HTML "html"
@@ -16,3 +17,5 @@
 #define HTTP_TIMEOUT    5
 #define DEFAULT_LISTEN  "0.0.0.0"
 #define DEFAULT_PORT    8080
+#define DEFAULT_INVERTED_INDEX  "./data/inverted_index"
+#define DEFAULT_INDEX_DICT      "./data/index_dict"
