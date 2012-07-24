@@ -3,8 +3,10 @@
 /**
  * global variables
  * */
-config_t gconfig;
+config_t      gconfig;
 index_term_t *index_hash_table;
+index_dict_t *index_dict_table;
+search_buf_t  search_buf;
 
 /*
  * 处理模块
@@ -140,6 +142,7 @@ static void usage()
     printf(PACKAGE " " VERSION "\n");
     printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
     printf("-a <num>      max dict table size(default: %d)\n", MAX_DICT_TABLE_SIZE);
+    printf("-f <num>      search buffer array count(default: %d)\n", SEARCH_BUF_SIZE);
     printf("-p <num>      TCP port number to listen on (default: %d)\n", DEFAULT_PORT);
     printf("-d [0|1]      cli or run as a daemon\n"
            "-H <hostname> interface to listen on (default: INADDR_ANY, all addresses)\n"
@@ -158,10 +161,14 @@ static void usage()
 int main(int argc, char** argv)
 {
     int c;
+    int t_opt;
+    size_t size;
     struct evhttp *httpd = NULL;
+    /**
     char *proxy_listen   = DEFAULT_LISTEN;    //绑定所有ip
     int proxy_port       = DEFAULT_PORT;      //端口号
     int proxy_settings_timeout = HTTP_TIMEOUT;     //http请求超时时间
+    */
 
     signal_setup();
 
@@ -172,6 +179,7 @@ int main(int argc, char** argv)
         "d:"  /* work as daemon process */
         "s:"  /* max hash table size */
         "a:"  /* max dict table size */
+        "f:"  /* search buffer array count */
         "H:"  /* http hostname -i */
         "p:"  /* http listen port  */
         "t:"  /* http timeout */
@@ -187,10 +195,86 @@ int main(int argc, char** argv)
         switch (c)
         {
         case 'd':
-            gconfig.do_daemonize = atoi(optarg);
+            if (strlen(optarg))
+            {
+                gconfig.do_daemonize = atoi(optarg);
+            }
             break;
 
-        case 'v':
+        case 's':
+            size = (size_t)atoll(optarg);
+            if (size > 0 && size > MAX_HASH_TABLE_SIZE)
+            {
+                gconfig.max_hash_table_size = size;
+            }
+            break;
+
+        case 'a':
+            size = (size_t)atoll(optarg);
+            if (size > 0 && size > MAX_DICT_TABLE_SIZE)
+            {
+                gconfig.max_dict_table_size = size;
+            }
+            break;
+
+        case 'f':
+            size = (size_t)atoll(optarg);
+            if (size > 0 && size > SEARCH_BUF_SIZE)
+            {
+                gconfig.search_buf_size = size;
+            }
+            break;
+
+        case 'H':
+            if (strlen(optarg))
+            {
+                snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", optarg);
+            }
+            else
+            {
+                fprintf(stderr, "-H need hostname, please set it.\n");
+                exit(EXIT_SUCCESS);
+            }
+            break;
+
+        case 'p':
+            t_opt = atoi(optarg);
+            if (t_opt > 0)
+            {
+                gconfig.port = t_opt;
+            }
+            break;
+
+        case 't':
+            t_opt = atoi(optarg);
+            if (t_opt >= 0 && t_opt <= 60 )
+            {
+                gconfig.timeout = t_opt;
+            }
+            break;
+
+        case 'l':
+            t_opt = atoi(optarg);
+            if (t_opt >= 0)
+            {
+                gconfig.log_level = t_opt;
+            }
+            break;
+
+        case 'i':   /** inverted index */
+            break;
+
+        case 'x':   /** index dict */
+            break;
+
+        case 'j':   /** lua json tpl */
+            break;
+
+        case 'm':   /** lua html tpl */
+            break;
+
+            case 'v':
+
         case 'h':
             usage();
             exit(EXIT_SUCCESS);
@@ -198,7 +282,7 @@ int main(int argc, char** argv)
     }
 
 #if (DAEMON)
-    if (-1 == daemonize(0, 1))
+    if (gconfig.do_daemonize && (-1 == daemonize(0, 1)))
     {
         fprintf(stderr, "failed to daemon() in order to daemonize\n");
         exit(EXIT_FAILURE);
@@ -208,15 +292,18 @@ int main(int argc, char** argv)
     /** 初始化事件 */
     event_init();
     /** 初始化监听ip和端口 */
-    httpd = evhttp_start(proxy_listen, proxy_port);
+    // httpd = evhttp_start(proxy_listen, proxy_port);
+    httpd = evhttp_start(gconfig.hostname, gconfig.port);
     if (NULL == httpd)
     {
-        fprintf(stderr, "[Error]: Unable to listen on %s:%d\n", proxy_listen, proxy_port);
+        fprintf(stderr, "[Error]: Unable to listen on %s:%d\n",
+            gconfig.hostname, gconfig.port);
         exit(1);
     }
 
     // 设置http连接超时时间
-    evhttp_set_timeout(httpd, proxy_settings_timeout);
+    //evhttp_set_timeout(httpd, proxy_settings_timeout);
+    evhttp_set_timeout(httpd, gconfig.timeout);
     // 设置请求到达后的回调函数
     evhttp_set_gencb(httpd, api_proxy_handler, NULL);
     // libevent 循环处理事件

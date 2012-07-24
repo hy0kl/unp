@@ -33,6 +33,7 @@
 #define SINGLE_INDEX_SIZE   20
 #define MAX_HASH_TABLE_SIZE 127
 #define MAX_DICT_TABLE_SIZE 32
+#define SEARCH_BUF_SIZE     64
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
 
@@ -43,20 +44,23 @@ typedef struct _config_t
     int  port;
     int  timeout;
     int  log_level;
-    int  max_hash_table_size;
-    int  max_dict_table_size;
+    size_t  max_hash_table_size;
+    size_t  max_dict_table_size;
+    size_t  search_buf_size;
     char hostname[HOST_NAME_LEN];
     char inverted_index[FILE_NAME_LEN];
     char index_dict[FILE_NAME_LEN];
 } config_t;
 
 typedef unsigned int indext_t;
+/** 倒排表单条数据 */
 typedef struct _index_term_t
 {
-    int size;   /** count(index_chain) */
+    size_t   size;   /** count(index_chain) */
     indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
 } index_term_t;
 
+/** 正排表单条数据 */
 typedef struct _index_dict_t
 {
     /** use malloc() */
@@ -64,9 +68,17 @@ typedef struct _index_dict_t
     char *brief;
 } index_dict_t;
 
+typedef struct _search_buf_t
+{
+    size_t current;
+    index_dict_t *dict_data;
+} search_buf_t;
+
 /**
  * global
  * */
 extern config_t      gconfig;
 extern index_term_t *index_hash_table;  /** 倒排表 */
 extern index_dict_t *index_dict_table;  /** 正排表 */
+extern search_buf_t  search_buf;
+
