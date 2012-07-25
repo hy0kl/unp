@@ -1,5 +1,4 @@
 #include "ev_sever.h"
-#include "util.h"
 
 #define PACKAGE "libevent-http-server"
 #define VERSION "1.0"
@@ -31,7 +30,7 @@
 
 /** about index query */
 #define SINGLE_INDEX_SIZE   20
-#define MAX_HASH_TABLE_SIZE 127
+#define MAX_HASH_TABLE_SIZE 4999
 #define MAX_DICT_TABLE_SIZE 32
 #define SEARCH_BUF_SIZE     64
 #define QUERY_LEN   512
@@ -52,7 +51,7 @@ typedef struct _config_t
     char index_dict[FILE_NAME_LEN];
 } config_t;
 
-typedef unsigned int indext_t;
+typedef unsigned long int indext_t;
 /** 倒排表单条数据 */
 typedef struct _index_term_t
 {

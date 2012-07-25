@@ -1,6 +1,6 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
-
+#include "event-http.h"
 /**
  * get localtime string.
  * */
@@ -15,5 +15,7 @@ int daemonize(int nochdir, int noclose);
  * set up signal
  * */
 void signal_setup();
+
+indext_t hash_word(const char *key, int hash_table_size);
 
 #endif

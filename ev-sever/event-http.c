@@ -1,5 +1,4 @@
-#include "event-http.h"
-
+#include "util.h"
 /**
  * global variables
  * */
@@ -67,6 +66,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     const char *http_input_name = evhttp_find_header(&http_query, "name");
     const char *uri_format      = evhttp_find_header(&http_query, "format");
     const char *uri_callback    = evhttp_find_header(&http_query, "callback");
+    const char *word            = evhttp_find_header(&http_query, "word");
 
     if (uri_format && 0 == strncmp(uri_format, FORMAT_JSON, sizeof(FORMAT_JSON) - 1))
     {
@@ -115,6 +115,12 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
         evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
         evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
         evbuffer_add_printf(buf, "Time: %s%s\n", time_str, CRLF);
+        if (NULL != word)
+        {
+            evbuffer_add_printf(buf, "word: %s, hash('%s') = %lu, table size = %d %s\n",
+                word, word, hash_word(word, gconfig.max_hash_table_size),
+                (int)gconfig.max_hash_table_size, CRLF);
+        }
         evbuffer_add_printf(buf, "</body></html>");
     }
 

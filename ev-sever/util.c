@@ -1,4 +1,4 @@
-#include "ev_sever.h"
+#include "util.h"
 
 int get_localtime_str(char *src, size_t buf_len)
 {
@@ -140,3 +140,20 @@ void signal_setup()
     return (void)0;
 }
 
+indext_t hash_word(const char *key, int hash_table_size)
+{
+    indext_t hash_value = 0;
+
+    if (NULL == key || hash_table_size <= 0)
+    {
+        return 0;
+    }
+
+    while ((u_char)*key)
+    {
+        hash_value = (hash_value << 5) + (u_char)*key++;
+    }
+    logprintf("[debug] hash_value: %lu", hash_value);
+
+    return hash_value % hash_table_size;
+}
