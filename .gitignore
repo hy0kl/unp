@@ -5,3 +5,5 @@
 *.dSYM
 a.out
 tags
+data/*
+data
