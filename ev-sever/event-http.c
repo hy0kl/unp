@@ -40,7 +40,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     logprintf("uri: %s", decode_uri);
     free(decode_uri);
 
-#if (TAILQ_FOREACH)
+#ifdef TAILQ_FOREACH
     //遍历整个uri的对应关系值
     {
         logprintf("--- foreach uri ---");
