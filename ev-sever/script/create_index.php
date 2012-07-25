@@ -6,14 +6,14 @@ define('DEFAULT_ENCODING', 'UTF-8');
 $config = array(
     'hash_table_size' => 49999,
     'original_file'   => './data/original', 
-    'inverted_index'  => './data/inverted_index.' . TIME_STR,
-    'index_dict'      => './data/index_dict.' . TIME_STR,
+    'inverted_index'  => './data/inverted_index',
+    'index_dict'      => './data/index_dict',
 );
 
 
 $r_orig_fp  = fopen($config['original_file'], 'r');
-$w_index_fp = fopen($config['inverted_index'], 'w');
-$w_dict_fp  = fopen($config['index_dict'], 'w');
+$w_index_fp = fopen($config['inverted_index'] . '.' .TIME_STR, 'w');
+$w_dict_fp  = fopen($config['index_dict'] . '.' .TIME_STR, 'w');
 
 if (!($r_orig_fp && $w_index_fp && $w_dict_fp))
 {
@@ -118,6 +118,11 @@ while (! feof($r_orig_fp))
 fclose($w_dict_fp);
 fclose($w_index_fp);
 fclose($r_orig_fp);
+
+$cmd = 'cp ' . $config['inverted_index'] . '.' . TIME_STR . ' ' . $config['inverted_index'];
+exec($cmd);
+$cmd = 'cp ' . $config['index_dict'] . '.' . TIME_STR . ' ' . $config['index_dict'];
+exec($cmd);
 
 function cmp_function($a, $b)
 {

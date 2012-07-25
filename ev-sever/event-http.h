@@ -37,6 +37,8 @@
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
 #define TPL_BUF_LEN 1024 * 80
+#define READ_LINE_BUF_LEN   2048
+#define SEPARATOR   "\t"
 
 typedef struct _config_t
 {

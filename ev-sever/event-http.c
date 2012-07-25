@@ -171,7 +171,22 @@ static void usage()
 static int load_index()
 {
     int ret = 0;
+    char *file_name = NULL;
+    FILE *fp = NULL;
 
+    file_name = &(gconfig.inverted_index);
+    logprintf("inverted_index: %s", file_name);
+    fp = fopen(file_name, "r");
+    if (! fp)
+    {
+        fprintf(stderr, "Can NOT open inverted index file: %s\n",
+            file_name);
+        ret = -1;
+        goto FINISH;
+    }
+    fclose(fp);
+
+FINISH:
     return ret;
 }
 
@@ -194,6 +209,7 @@ static int init_search_library()
         ret = -1;
         goto FINISH;
     }
+    memset(index_hash_table, 0, gconfig.max_hash_table_size);
 
     /** 申请正排表的内存空间 */
     size = sizeof(index_dict_t) * gconfig.max_dict_table_size;
