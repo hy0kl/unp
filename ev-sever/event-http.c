@@ -180,42 +180,47 @@ static int init_search_library()
 {
     int ret = 0;
     int i = 0;
+    size_t size = 0;
 
     /** 申请倒排表的内存空间 */
-    index_hash_table = (index_term_t *)malloc(sizeof(index_term_t) * gconfig.max_hash_table_size);
+    size = sizeof(index_term_t) * gconfig.max_hash_table_size;
+    index_hash_table = (index_term_t *)malloc(size);
     if (NULL == index_hash_table)
     {
         fprintf(stderr, "Can NOT malloc memory for hash table, need size: %ld\n",
-            sizeof(index_term_t) * gconfig.max_hash_table_size);
+            size);
         ret = -1;
         goto FINISH;
     }
 
     /** 申请正排表的内存空间 */
-    index_dict_table = (index_dict_t *)malloc(sizeof(index_dict_t) * gconfig.max_dict_table_size);
+    size = sizeof(index_dict_t) * gconfig.max_dict_table_size;
+    index_dict_table = (index_dict_t *)malloc(size);
     if (NULL == index_dict_table)
     {
         fprintf(stderr, "Can NOT malloc memory for index dict, need size: %ld\n",
-            sizeof(index_dict_t) * gconfig.max_dict_table_size);
+            size);
         ret = -1;
         goto FINISH;
     }
     for (i = 0; i < gconfig.max_dict_table_size; i++)
     {
-        index_dict_table[i].query = (char *)malloc(sizeof(char) * QUERY_LEN);
+        size = sizeof(char) * QUERY_LEN;
+        index_dict_table[i].query = (char *)malloc(size);
         if (NULL == index_dict_table[i].query)
         {
             fprintf(stderr, "Can NOT malloc memory for index_dict_table[%d].query, need size: %ld\n",
-                i, sizeof(char) * QUERY_LEN);
+                i, size);
             ret = -1;
             goto FINISH;
         }
 
-        index_dict_table[i].brief = (char *)malloc(sizeof(char) * BRIEF_LEN);
+        size = sizeof(char) * BRIEF_LEN;
+        index_dict_table[i].brief = (char *)malloc(size);
         if (NULL == index_dict_table[i].brief)
         {
             fprintf(stderr, "Can NOT malloc memory for index_dict_table[%d].brief, need size: %ld\n",
-                i, sizeof(char) * BRIEF_LEN);
+                i, size);
             ret = -1;
             goto FINISH;
         }
@@ -227,6 +232,37 @@ static int init_search_library()
      * 加锁则影响性能,开到足够大能降低概率,不能免除
      * 我的理解 ^_*
      * */
+    search_buf.current   = 0;
+    size = sizeof(index_dict_t) * gconfig.search_buf_size;
+    search_buf.dict_data = (index_dict_t *)malloc(size);
+    if (NULL == search_buf.dict_data)
+    {
+        fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data, need size: %ld\n",
+            size);
+        ret = -1;
+        goto FINISH;
+    }
+    size = sizeof(char *) * gconfig.search_buf_size;
+    search_buf.tpl_buf = (char **)malloc(size);
+    if (NULL == search_buf.tpl_buf)
+    {
+        fprintf(stderr, "Can NOT malloc memory for search_buf->tpl_buf, need size: %ld\n",
+            size);
+        ret = -1;
+        goto FINISH;
+    }
+    size = sizeof(char) * TPL_BUF_LEN;
+    for (i = 0; i < gconfig.search_buf_size; i++)
+    {
+        search_buf.tpl_buf[i] = (char *)malloc(size);
+        if (NULL == search_buf.tpl_buf[i])
+        {
+            fprintf(stderr, "Can NOT malloc memory for search_buf->tpl_buf[%d], need size: %ld\n",
+                i, size);
+            ret = -1;
+            goto FINISH;
+        }
+    }
 
 FINISH:
     return ret;

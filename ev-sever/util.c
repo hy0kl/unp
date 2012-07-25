@@ -153,7 +153,10 @@ indext_t hash_word(const char *key, int hash_table_size)
     {
         hash_value = (hash_value << 5) + (u_char)*key++;
     }
+
+#if (_DEBUG_)
     logprintf("[debug] hash_value: %lu", hash_value);
+#endif
 
     return hash_value % hash_table_size;
 }

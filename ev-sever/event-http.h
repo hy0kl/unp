@@ -6,6 +6,7 @@
 #define FORMAT_HTML "html"
 #define FORMAT_JSON "json"
 
+#define _DEBUG  1
 #define DAEMON  1
 
 /**
@@ -35,6 +36,7 @@
 #define SEARCH_BUF_SIZE     64
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
+#define TPL_BUF_LEN 1024 * 80
 
 typedef struct _config_t
 {
