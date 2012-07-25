@@ -140,7 +140,7 @@ void signal_setup()
     return (void)0;
 }
 
-indext_t hash_word(const char *key, int hash_table_size)
+indext_t hash(const char *key, int hash_table_size)
 {
     indext_t hash_value = 0;
 

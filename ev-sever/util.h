@@ -16,6 +16,6 @@ int daemonize(int nochdir, int noclose);
  * */
 void signal_setup();
 
-indext_t hash_word(const char *key, int hash_table_size);
+indext_t hash(const char *key, int hash_table_size);
 
 #endif

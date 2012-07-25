@@ -120,7 +120,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
         if (NULL != word)
         {
             evbuffer_add_printf(buf, "word: %s, hash('%s') = %lu, table size = %d %s\n",
-                word, word, hash_word(word, gconfig.max_hash_table_size),
+                word, word, hash(word, gconfig.max_hash_table_size),
                 (int)gconfig.max_hash_table_size, CRLF);
         }
         evbuffer_add_printf(buf, "</body></html>");
