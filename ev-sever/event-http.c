@@ -159,8 +159,8 @@ static void usage()
            "-t <timeout>  set HTTP timeout\n"
            "-v            show version and help\n"
            "-l <level>    set log lever\n"
-           "-i <file>     set inverted index file name and path\n"
-           "-x <file>     set index dict file name and path\n"
+           "-i <file>     set inverted index file name and path, ABS path is better\n"
+           "-x <file>     set index dict file name and path, ABS path is better\n"
            "-j <file>     set lua tpl to create json\n"
            "-m <file>     set lua tpl to create html\n"
            "-h            show this help and exit\n");
@@ -170,11 +170,19 @@ static void usage()
 
 static int load_index()
 {
-    int ret = 0;
-    char *file_name = NULL;
+    int   ret = 0;
+    int   i = 0;
     FILE *fp = NULL;
+    char *file_name = NULL;
+    char  line[READ_LINE_BUF_LEN] = {0};
+    char *find = NULL;
+    char *p    = NULL;
 
-    file_name = &(gconfig.inverted_index);
+    indext_t dict_id   = 0;
+    size_t array_count = 0;
+    size_t array_index = 0;
+    /** load inverted index data */
+    file_name = gconfig.inverted_index;
     logprintf("inverted_index: %s", file_name);
     fp = fopen(file_name, "r");
     if (! fp)
@@ -184,6 +192,53 @@ static int load_index()
         ret = -1;
         goto FINISH;
     }
+
+    while(! feof(fp))
+    {
+        if (NULL == fgets(line, READ_LINE_BUF_LEN - 1, fp))
+        {
+            continue;
+        }
+
+        line[READ_LINE_BUF_LEN - 1] = '\0';
+        //logprintf("every line: %s", line);
+        p = line;
+
+        /** skip query */
+        find = strstr(p, SEPARATOR);
+        if (find)
+        {
+            *find = '\0';
+        }
+        p = find + 1;
+
+        find = strstr(p, SEPARATOR);
+        if (find)
+        {
+            *find = '\0';
+        }
+        array_index = (size_t)atoll(p) % gconfig.max_hash_table_size;
+        //logprintf("inverted index: %lu", array_index);
+
+        p = find + 1;
+        for (i = 0, array_count = 0; i < SINGLE_INDEX_SIZE; i++)
+        {
+            find = strstr(p, ",");
+            if (find)
+            {
+                *find = '\0';
+                dict_id = (indext_t)atoll(p);
+                //logprintf("every dict id: %lu", dict_id);
+                index_hash_table[array_index].index_chain[array_count] = dict_id;
+
+                p = find + 1;
+                array_count++;
+            }
+        }
+        index_hash_table[array_index].size = array_count;
+        logprintf("index_hash_table[%lu].size = %lu", array_index, array_count);
+    }
+
     fclose(fp);
 
 FINISH:
@@ -390,9 +445,19 @@ int main(int argc, char** argv)
             break;
 
         case 'i':   /** inverted index */
+            if (strlen(optarg))
+            {
+                snprintf(gconfig.inverted_index, FILE_NAME_LEN,
+                    "%s", optarg);
+            }
             break;
 
         case 'x':   /** index dict */
+            if (strlen(optarg))
+            {
+                snprintf(gconfig.index_dict, FILE_NAME_LEN,
+                    "%s", optarg);
+            }
             break;
 
         case 'j':   /** lua json tpl */
