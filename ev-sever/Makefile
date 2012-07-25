@@ -11,10 +11,21 @@ GCC = gcc
 GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 
 TARGET = ev-server
-OBJS   = event-http.o util.o
+TOOL   = hash
 
-$(TARGET) : $(OBJS)
-	@echo "start work"
+OBJS1  = event-http.o util.o
+OBJS2  = hash.o util.o
+
+all : $(TARGET) $(TOOL)
+	@echo "Start compile all"
+	rm -f *.o
+
+$(TARGET) : $(OBJS1)
+	@echo "start compile server"
+	$(GCC) -g -o $@ $^ $(LIBDIR)
+
+$(TOOL) : $(OBJS2)
+	@echo "start compile tool"
 	$(GCC) -g -o $@ $^ $(LIBDIR)
 
 %.o : %.c
@@ -22,8 +33,8 @@ $(TARGET) : $(OBJS)
 
 .PHONY: clean
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS1) $(OBJS2)
 
 .PHONY: cleanobj
 cleanobj:
-	rm -f $(OBJS)
+	rm -f $(OBJS1) $(OBJS2)
