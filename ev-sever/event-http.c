@@ -140,6 +140,7 @@ static void init_config()
     gconfig.timeout      = HTTP_TIMEOUT;
     gconfig.log_level    = 4;
     gconfig.max_hash_table_size = MAX_HASH_TABLE_SIZE;
+    gconfig.max_dict_table_size = MAX_DICT_TABLE_SIZE;
     snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", DEFAULT_LISTEN);
     snprintf(gconfig.inverted_index, FILE_NAME_LEN, "%s", DEFAULT_INVERTED_INDEX);
     snprintf(gconfig.index_dict, FILE_NAME_LEN, "%s", DEFAULT_INDEX_DICT);
@@ -171,7 +172,6 @@ static void usage()
 static int load_index()
 {
     int   ret = 0;
-    int   i = 0;
     FILE *fp = NULL;
     char *file_name = NULL;
     char  line[READ_LINE_BUF_LEN] = {0};
@@ -179,11 +179,22 @@ static int load_index()
     char *p    = NULL;
 
     indext_t dict_id   = 0;
+    size_t i = 0;
     size_t array_count = 0;
     size_t array_index = 0;
-    /** load inverted index data */
+
+    char query[QUERY_LEN] = {0};
+    char brief[BRIEF_LEN] = {0};
+
+    /** load inverted index data { */
+    /**
+     * File field format
+     * prefix\tindex(hash key)\tdict-id-m,...dict-id-n,\n
+     * */
     file_name = gconfig.inverted_index;
-    logprintf("inverted_index: %s", file_name);
+#if (_DEBUG)
+    logprintf("inverted_index: [%s]", file_name);
+#endif
     fp = fopen(file_name, "r");
     if (! fp)
     {
@@ -236,11 +247,99 @@ static int load_index()
             }
         }
         index_hash_table[array_index].size = array_count;
+#if (_DEBUG)
         logprintf("index_hash_table[%lu].size = %lu", array_index, array_count);
+#endif
     }
 
     fclose(fp);
+    /** end for inverted index } */
 
+    /** load dict data { */
+    /**
+     * index_dict file format
+     * dict-id\tquery-word\thot\tbrief-info\n
+     * */
+    file_name = gconfig.index_dict;
+#if (_DEBUG)
+    logprintf("index_dict: [%s]", file_name);
+#endif
+    fp = fopen(file_name, "r");
+    if (! fp)
+    {
+        fprintf(stderr, "Can NOT open dict data file: [%s]\n", file_name);
+        ret = -1;
+        goto FINISH;
+    }
+
+    while (! feof(fp))
+    {
+        if (NULL == fgets(line, READ_LINE_BUF_LEN - 1, fp))
+        {
+            continue;
+        }
+
+        line[READ_LINE_BUF_LEN - 1] = '\0';
+        //logprintf("every line: %s", line);
+        p = line;
+
+        find = strstr(p, SEPARATOR);
+        if (find)
+        {
+            *find = '\0';
+        }
+        array_index = (size_t)atoll(p);
+        logprintf("array_index: %lu", array_index);
+        if (! (array_index > 0))
+        {
+            continue;
+        }
+        else if (array_index > gconfig.max_dict_table_size)
+        {
+            logprintf("The dict number out of max dict tabel size: %lu", gconfig.max_dict_table_size);
+            break;
+        }
+        /** hash key 和字典序差 1,为了使数组下标从 0 开始而考虑 */
+        array_index -= 1;
+
+        p = find + 1;
+        find = strstr(p, SEPARATOR);
+        if (NULL == find)
+        {
+            continue;
+        }
+        *find = '\0';
+        snprintf(query, QUERY_LEN, "%s", p);
+        //logprintf("every query: [%s]", query);
+
+        /** skip hot field */
+        p = find + 1;
+        find = strstr(p, SEPARATOR);
+        if (find)
+        {
+            *find = '\0';
+        }
+        p = find + 1;
+
+        /** trim last \n */
+        find = strstr(p, "\n");
+        if (find)
+        {
+            *find = '\0';
+        }
+        snprintf(brief, BRIEF_LEN, "%s", p);
+        //logprintf("every brief: [%s]", p);
+
+        snprintf(index_dict_table[array_index].query, QUERY_LEN, "%s", query);
+        snprintf(index_dict_table[array_index].brief, BRIEF_LEN, "%s", brief);
+#if (_DEBUG)
+        logprintf("index_dict_table[%lu].query = %s", array_index, query);
+        logprintf("index_dict_table[%lu].brief = %s", array_index, brief);
+#endif
+    }
+
+    fclose(fp);
+    /** end of for dict }*/
 FINISH:
     return ret;
 }
