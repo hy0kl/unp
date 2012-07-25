@@ -21,6 +21,8 @@ if (!($r_orig_fp && $w_index_fp && $w_dict_fp))
     exit();
 }
 
+$prefix_map = array();
+
 $dict_id = 0;
 while (! feof($r_orig_fp))
 {
@@ -58,6 +60,14 @@ while (! feof($r_orig_fp))
     {
         $prefix = mb_substr($query, 0, $i, DEFAULT_ENCODING);
         //echo $prefix . "\n";
+        if (isset($prefix_map[$prefix]))
+        {
+            continue;
+        }
+        else
+        {
+            $prefix_map[$prefix] = 1;
+        }
 
         $t_fp = fopen($config['original_file'], 'r');
         if (! $t_fp)
