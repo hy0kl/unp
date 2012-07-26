@@ -23,14 +23,36 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     struct evbuffer *buf;
     buf = evbuffer_new();
 
+    index_dict_t *work_buf = NULL;
+    char *tpl_buf = NULL;
+    size_t token  = 0;
+
     /**
      * 0: default html
      * 1: json
      * */
+    int error_flag = 0;
     int output_format  = 0;
     int callback_validate = 0;
     char callback[16] = {0};
     char time_str[32] = {0};
+
+    /** apply work buf */
+    if (search_buf.current < gconfig.search_buf_size - 1)
+    {
+        token = search_buf.current++;
+    }
+    else
+    {
+        token = 0;
+        search_buf.current = 0;
+    }
+    work_buf = search_buf.dict_data[token];
+    tpl_buf  = search_buf.tpl_buf[token];
+    if (NULL == work_buf || NULL == tpl_buf)
+    {
+        error_flag = 1;
+    }
 
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
@@ -64,11 +86,11 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
 
     get_localtime_str(time_str, sizeof(time_str));
 
-    //接收GET表单参数name
-    const char *http_input_name = evhttp_find_header(&http_query, "name");
-    const char *uri_format      = evhttp_find_header(&http_query, "format");
-    const char *uri_callback    = evhttp_find_header(&http_query, "callback");
-    const char *word            = evhttp_find_header(&http_query, "word");
+    //接收 GET 参数
+    //const char *http_input_name = evhttp_find_header(&http_query, "name");
+    const char *uri_format    = evhttp_find_header(&http_query, "format");
+    const char *uri_callback  = evhttp_find_header(&http_query, "callback");
+    const char *word          = evhttp_find_header(&http_query, "word");
 
     if (uri_format && 0 == strncmp(uri_format, FORMAT_JSON, sizeof(FORMAT_JSON) - 1))
     {
@@ -115,7 +137,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
 </head><body>");
         evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
         evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
-        evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
+        //evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
         evbuffer_add_printf(buf, "Time: %s%s\n", time_str, CRLF);
         if (NULL != word)
         {
@@ -405,8 +427,8 @@ static int init_search_library()
      * 我的理解 ^_*
      * */
     search_buf.current   = 0;
-    size = sizeof(index_dict_t) * gconfig.search_buf_size;
-    search_buf.dict_data = (index_dict_t *)malloc(size);
+    size = sizeof(index_dict_t *) * gconfig.search_buf_size;
+    search_buf.dict_data = (index_dict_t **)malloc(size);
     if (NULL == search_buf.dict_data)
     {
         fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data, need size: %ld\n",
@@ -414,6 +436,19 @@ static int init_search_library()
         ret = -1;
         goto FINISH;
     }
+    size = sizeof(index_dict_t) * SINGLE_INDEX_SIZE;
+    for (i =0; i < gconfig.search_buf_size; i++)
+    {
+        search_buf.dict_data[i] = (index_dict_t *)malloc(size);
+        if (NULL == search_buf.dict_data[i])
+        {
+            fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data[%d], need size: %ld\n",
+                i, size);
+        }
+        ret = -1;
+        goto FINISH;
+    }
+
     size = sizeof(char *) * gconfig.search_buf_size;
     search_buf.tpl_buf = (char **)malloc(size);
     if (NULL == search_buf.tpl_buf)
