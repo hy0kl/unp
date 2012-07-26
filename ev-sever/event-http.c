@@ -377,6 +377,7 @@ static int init_search_library()
 {
     int ret = 0;
     int i = 0;
+    int k = 0;
     size_t size = 0;
     size_t sub_size = 0;
 
@@ -453,25 +454,28 @@ static int init_search_library()
             ret = -1;
             goto FINISH;
         }
-        /** cache buf, query */
-        sub_size = sizeof(char) * QUERY_LEN;
-        search_buf.dict_data[i]->query = (char *)malloc(sub_size);
-        if (NULL == search_buf.dict_data[i]->query)
+        for (k = 0; k < SINGLE_INDEX_SIZE; k++)
         {
-            fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d].query, need size: %lu\n",
-                i, sub_size);
-            ret = -1;
-            goto FINISH;
-        }
-        /** cache buf, brief */
-        sub_size = sizeof(char) * BRIEF_LEN;
-        search_buf.dict_data[i]->brief = (char *)malloc(sub_size);
-        if (NULL == search_buf.dict_data[i]->brief)
-        {
-            fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d].brief, need size: %lu\n",
-                i, sub_size);
-            ret = -1;
-            goto FINISH;
+            /** cache buf, query */
+            sub_size = sizeof(char) * QUERY_LEN;
+            search_buf.dict_data[i][k].query = (char *)malloc(sub_size);
+            if (NULL == search_buf.dict_data[i][k].query)
+            {
+                fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d][%d].query, need size: %lu\n",
+                    i, k, sub_size);
+                ret = -1;
+                goto FINISH;
+            }
+            /** cache buf, brief */
+            sub_size = sizeof(char) * BRIEF_LEN;
+            search_buf.dict_data[i][k].brief = (char *)malloc(sub_size);
+            if (NULL == search_buf.dict_data[i][k].brief)
+            {
+                fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d][%d].brief, need size: %lu\n",
+                    i, k, sub_size);
+                ret = -1;
+                goto FINISH;
+            }
         }
     }
 
