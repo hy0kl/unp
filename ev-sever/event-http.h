@@ -29,11 +29,15 @@
 #define HOST_NAME_LEN   32
 #define FILE_NAME_LEN   128
 
+/** output format */
+#define OUTPUT_AS_HTML 0
+#define OUTPUT_AS_JSON 1
+
 /** about index query */
 #define SINGLE_INDEX_SIZE   20
 #define MAX_HASH_TABLE_SIZE 49999
 #define MAX_DICT_TABLE_SIZE 32
-#define SEARCH_BUF_SIZE     16
+#define SEARCH_BUF_SIZE     64
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
 #define TPL_BUF_LEN 1024 * 80
@@ -71,12 +75,27 @@ typedef struct _index_dict_t
     char *brief;
 } index_dict_t;
 
+typedef struct _work_buf_t
+{
+    size_t        array_count;  /** count(dict_data) */
+    index_dict_t *dict_data;
+} work_buf_t;
+
 typedef struct _search_buf_t
 {
     size_t current;
-    index_dict_t **dict_data;
+    work_buf_t    *work_buf;
     char         **tpl_buf;
 } search_buf_t;
+
+/** sever action */
+enum s_action_t
+{
+    ACTION_NONE,
+    ACTION_SEARCH,
+    ACTION_UPDATE,
+    ACTION_DELETE,
+};
 
 /**
  * global

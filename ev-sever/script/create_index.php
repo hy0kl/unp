@@ -10,6 +10,10 @@ $config = array(
     'index_dict'      => './data/index_dict',
 );
 
+/**
+ *  original file format
+ *  query\thot\tbrief\n
+ * */
 
 $r_orig_fp  = fopen($config['original_file'], 'r');
 $w_index_fp = fopen($config['inverted_index'] . '.' .TIME_STR, 'w');

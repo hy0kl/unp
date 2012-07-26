@@ -8,6 +8,14 @@ index_term_t *index_hash_table = NULL;
 index_dict_t *index_dict_table = NULL;
 search_buf_t  search_buf;
 
+int search_process(const char *word, work_buf_t *work_buf)
+{
+    int ret = 0;
+
+
+    return ret;
+}
+
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
@@ -23,7 +31,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     struct evbuffer *buf;
     buf = evbuffer_new();
 
-    index_dict_t *work_buf = NULL;
+    work_buf_t *work_buf = NULL;
     char *tpl_buf = NULL;
     size_t token  = 0;
 
@@ -32,12 +40,15 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
      * 1: json
      * */
     int error_flag = 0;
-    int output_format  = 0;
+    int output_format  = OUTPUT_AS_HTML;
     int callback_validate = 0;
     char callback[16] = {0};
     char time_str[32] = {0};
 
-    /** apply work buf */
+    //enum s_action_t s_action;
+    //s_action = ACTION_NONE;
+
+    /** apply work buf { */
     if (search_buf.current < gconfig.search_buf_size - 1)
     {
         token = search_buf.current++;
@@ -47,7 +58,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
         token = 0;
         search_buf.current = 0;
     }
-    work_buf = search_buf.dict_data[token];
+    work_buf = &(search_buf.work_buf[token]);
     tpl_buf  = search_buf.tpl_buf[token];
     if (NULL == work_buf || NULL == tpl_buf)
     {
@@ -56,15 +67,21 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
 #if (_DEBUG)
     logprintf("[error_flag]: %d, token: %lu", error_flag, token);
 #endif
+    /** end of apply memory for work buf } */
 
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
     struct evkeyvalq http_query;
     evhttp_parse_query(decode_uri, &http_query);
 
+#if (_DEBUG)
     logprintf("uri: %s", decode_uri);
+#endif
+
+    /** free memory */
     free(decode_uri);
 
+#if (_DEBUG)
 #ifdef TAILQ_FOREACH
     //遍历整个uri的对应关系值
     {
@@ -86,24 +103,30 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
         logprintf("---- end request header ----");
     }
 #endif
+#endif
 
     get_localtime_str(time_str, sizeof(time_str));
 
-    //接收 GET 参数
+    /* 接收 GET 解析参数 { */
     //const char *http_input_name = evhttp_find_header(&http_query, "name");
     const char *uri_format    = evhttp_find_header(&http_query, "format");
     const char *uri_callback  = evhttp_find_header(&http_query, "callback");
-    const char *word          = evhttp_find_header(&http_query, "word");
+    const char *word   = evhttp_find_header(&http_query, "word");
+    //const char *action = evhttp_find_header(&http_query, "action");
 
     if (uri_format && 0 == strncmp(uri_format, FORMAT_JSON, sizeof(FORMAT_JSON) - 1))
     {
-        output_format = 1;
+        output_format = OUTPUT_AS_JSON;
     }
     if (uri_callback && strlen(uri_callback))
     {
         snprintf(callback, sizeof(callback), "%s && %s(", uri_callback, uri_callback);
         callback_validate = 1;
     }
+
+    // switch s_action
+    search_process(word, work_buf);
+    /** end get and parse get parameter }*/
 
     //处理输出header头
     if (output_format)
@@ -434,22 +457,22 @@ static int init_search_library()
      * */
     logprintf("apply memory for search_buf.dict_data.");
     search_buf.current   = 0;
-    size = sizeof(index_dict_t *) * gconfig.search_buf_size;
-    search_buf.dict_data = (index_dict_t **)malloc(size);
-    if (NULL == search_buf.dict_data)
+    size = sizeof(work_buf_t) * gconfig.search_buf_size;
+    search_buf.work_buf = (work_buf_t *)malloc(size);
+    if (NULL == search_buf.work_buf)
     {
-        fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data, need size: %ld\n",
-            size);
+        fprintf(stderr, "Can NOT malloc memory for search_buf->work_buf[%lu], need size: %ld\n",
+            gconfig.search_buf_size, size);
         ret = -1;
         goto FINISH;
     }
     size = sizeof(index_dict_t) * SINGLE_INDEX_SIZE;
     for (i = 0; i < gconfig.search_buf_size; i++)
     {
-        search_buf.dict_data[i] = (index_dict_t *)malloc(size);
-        if (NULL == search_buf.dict_data[i])
+        search_buf.work_buf[i].dict_data = (index_dict_t *)malloc(size);
+        if (NULL == search_buf.work_buf[i].dict_data)
         {
-            fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data[%d], need size: %ld\n",
+            fprintf(stderr, "Can NOT malloc memory for search_buf.work_buf_t[%d].dict_data, need size: %ld\n",
                 i, size);
             ret = -1;
             goto FINISH;
@@ -458,20 +481,22 @@ static int init_search_library()
         {
             /** cache buf, query */
             sub_size = sizeof(char) * QUERY_LEN;
-            search_buf.dict_data[i][k].query = (char *)malloc(sub_size);
-            if (NULL == search_buf.dict_data[i][k].query)
+            search_buf.work_buf[i].dict_data[k].query = (char *)malloc(sub_size);
+            if (NULL == search_buf.work_buf[i].dict_data[k].query)
             {
-                fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d][%d].query, need size: %lu\n",
+                fprintf(stderr, "Can NOT malloc memory for search_\
+buf.work_buf[%d].dict_data[%d].query, need size: %lu\n",
                     i, k, sub_size);
                 ret = -1;
                 goto FINISH;
             }
             /** cache buf, brief */
             sub_size = sizeof(char) * BRIEF_LEN;
-            search_buf.dict_data[i][k].brief = (char *)malloc(sub_size);
-            if (NULL == search_buf.dict_data[i][k].brief)
+            search_buf.work_buf[i].dict_data[k].brief = (char *)malloc(sub_size);
+            if (NULL == search_buf.work_buf[i].dict_data[k].brief)
             {
-                fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d][%d].brief, need size: %lu\n",
+                fprintf(stderr, "Can NOT malloc memory for \
+search_buf.work_buf[%d].dict_data[%d].brief, need size: %lu\n",
                     i, k, sub_size);
                 ret = -1;
                 goto FINISH;
