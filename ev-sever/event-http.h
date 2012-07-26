@@ -33,7 +33,7 @@
 #define SINGLE_INDEX_SIZE   20
 #define MAX_HASH_TABLE_SIZE 49999
 #define MAX_DICT_TABLE_SIZE 32
-#define SEARCH_BUF_SIZE     64
+#define SEARCH_BUF_SIZE     16
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
 #define TPL_BUF_LEN 1024 * 80

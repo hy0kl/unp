@@ -53,6 +53,9 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     {
         error_flag = 1;
     }
+#if (_DEBUG)
+    logprintf("[error_flag]: %d, token: %lu", error_flag, token);
+#endif
 
     /* 分析URL参数 */
     char *decode_uri = strdup((char*) evhttp_request_uri(req));
@@ -163,6 +166,7 @@ static void init_config()
     gconfig.log_level    = 4;
     gconfig.max_hash_table_size = MAX_HASH_TABLE_SIZE;
     gconfig.max_dict_table_size = MAX_DICT_TABLE_SIZE;
+    gconfig.search_buf_size     = SEARCH_BUF_SIZE;
     snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", DEFAULT_LISTEN);
     snprintf(gconfig.inverted_index, FILE_NAME_LEN, "%s", DEFAULT_INVERTED_INDEX);
     snprintf(gconfig.index_dict, FILE_NAME_LEN, "%s", DEFAULT_INDEX_DICT);
@@ -374,6 +378,7 @@ static int init_search_library()
     int ret = 0;
     int i = 0;
     size_t size = 0;
+    size_t sub_size = 0;
 
     /** 申请倒排表的内存空间 */
     size = sizeof(index_term_t) * gconfig.max_hash_table_size;
@@ -426,6 +431,7 @@ static int init_search_library()
      * 加锁则影响性能,开到足够大能降低概率,不能免除
      * 我的理解 ^_*
      * */
+    logprintf("apply memory for search_buf.dict_data.");
     search_buf.current   = 0;
     size = sizeof(index_dict_t *) * gconfig.search_buf_size;
     search_buf.dict_data = (index_dict_t **)malloc(size);
@@ -437,18 +443,39 @@ static int init_search_library()
         goto FINISH;
     }
     size = sizeof(index_dict_t) * SINGLE_INDEX_SIZE;
-    for (i =0; i < gconfig.search_buf_size; i++)
+    for (i = 0; i < gconfig.search_buf_size; i++)
     {
         search_buf.dict_data[i] = (index_dict_t *)malloc(size);
         if (NULL == search_buf.dict_data[i])
         {
             fprintf(stderr, "Can NOT malloc memory for search_buf->dict_data[%d], need size: %ld\n",
                 i, size);
+            ret = -1;
+            goto FINISH;
         }
-        ret = -1;
-        goto FINISH;
+        /** cache buf, query */
+        sub_size = sizeof(char) * QUERY_LEN;
+        search_buf.dict_data[i]->query = (char *)malloc(sub_size);
+        if (NULL == search_buf.dict_data[i]->query)
+        {
+            fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d].query, need size: %lu\n",
+                i, sub_size);
+            ret = -1;
+            goto FINISH;
+        }
+        /** cache buf, brief */
+        sub_size = sizeof(char) * BRIEF_LEN;
+        search_buf.dict_data[i]->brief = (char *)malloc(sub_size);
+        if (NULL == search_buf.dict_data[i]->brief)
+        {
+            fprintf(stderr, "Can NOT malloc memory for search_buf.dict_data[%d].brief, need size: %lu\n",
+                i, sub_size);
+            ret = -1;
+            goto FINISH;
+        }
     }
 
+    logprintf("apply memory for search_buf.tpl_buf.");
     size = sizeof(char *) * gconfig.search_buf_size;
     search_buf.tpl_buf = (char **)malloc(size);
     if (NULL == search_buf.tpl_buf)
