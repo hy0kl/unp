@@ -13,7 +13,7 @@ Notice
 The usage of simple suggestion system by prefix index
 -----
     git clone git://github.com/hy0kl/unp.git
-    cd cd unp/ev-sever
+    cd unp/ev-sever
     vi auto.sh #change the work_path for your system.
     ./auto.sh
 
