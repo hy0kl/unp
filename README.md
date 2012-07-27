@@ -17,6 +17,8 @@ The usage of simple suggestion system by prefix index
     vi auto.sh #change the work_path for your system.
     ./auto.sh
 
+    visit: http://localhost:8080/?word=%E4%B8%80
+
 History
 ------
     2012.08.27 finish one demo version.
