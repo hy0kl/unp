@@ -374,6 +374,10 @@ static int load_index()
             {
                 *find = '\0';
                 dict_id = (indext_t)atoll(p);
+                if (! (dict_id > 0))
+                {
+                    continue;
+                }
                 //logprintf("every dict id: %lu", dict_id);
                 index_hash_table[array_index].index_chain[array_count] = dict_id;
 
@@ -425,6 +429,7 @@ static int load_index()
         }
         array_index = (size_t)atoll(p);
         logprintf("array_index: %lu", array_index);
+        /** @: Important fault-tolerant */
         if (! (array_index > 0))
         {
             continue;
@@ -570,8 +575,8 @@ static int init_search_library()
             search_buf.work_buf[i].dict_data[k].query = (char *)malloc(sub_size);
             if (NULL == search_buf.work_buf[i].dict_data[k].query)
             {
-                fprintf(stderr, "Can NOT malloc memory for search_\
-buf.work_buf[%d].dict_data[%d].query, need size: %lu\n",
+                fprintf(stderr, "Can NOT malloc memory for \
+search_buf.work_buf[%d].dict_data[%d].query, need size: %lu\n",
                     i, k, sub_size);
                 ret = -1;
                 goto FINISH;

@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Hong_Kong');
 define('SEPARATOR', "\t");
 define('TIME_STR', date('Y-m-d', time()));
 define('DEFAULT_ENCODING', 'UTF-8');
@@ -72,6 +73,7 @@ while (! feof($r_orig_fp))
         {
             $prefix_map[$prefix] = 1;
         }
+        //print_r($prefix_map);
 
         $t_fp = fopen($config['original_file'], 'r');
         if (! $t_fp)
@@ -121,12 +123,12 @@ while (! feof($r_orig_fp))
         //print_r($index_data);
         usort($index_data['dict_ids'], "cmp_function");
 
-        write_index(&$w_index_fp, &$index_data);
+        write_index($w_index_fp, $index_data);
 
         fclose($t_fp);
     }
 
-    write_dict(&$w_dict_fp, &$dict);
+    write_dict($w_dict_fp, $dict);
 }
 
 fclose($w_dict_fp);
@@ -157,5 +159,7 @@ function write_index(&$fp, &$index_data)
 function write_dict(&$fp, &$dict)
 {
     $log = implode(SEPARATOR, $dict) . "\n";
+    $log = str_replace('"', '\"', $log);
     fwrite($fp, $log, strlen($log));
 }
+
