@@ -119,11 +119,12 @@ change set `format` and try again.%s", CRLF);
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
- * http://localhost:DEFAULT_PORT/?name=test
  * TODO: add getopt() and gconf.
  * TODO: add lua to create JSON data.
  * TODO: add log logic.
  * TODO: add search logic.
+ * TODO: str_replace()
+ *
 */
 static void api_proxy_handler(struct evhttp_request *req, void *arg)
 {
@@ -144,6 +145,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     char callback[16] = {0};
     char time_str[32] = {0};
 
+    /** some action */
     //enum s_action_t s_action;
     //s_action = ACTION_NONE;
 
