@@ -78,15 +78,22 @@ FINISH:
     return ret;
 }
 
-static int built_json_body(char *tpl_buf, const work_buf_t *work_buf)
+static int built_json_body(const char *callback, char *tpl_buf, const work_buf_t *work_buf)
 {
     int ret = 0;
-    snprintf(tpl_buf, TPL_BUF_LEN, "{\"info\":\"Here is json...\"}");
+    int callback_validate = 0;
+
+    if ('\0' != callback[0])
+    {
+        callback_validate = 1;
+    }
+    snprintf(tpl_buf, TPL_BUF_LEN, "%s{\"info\":\"Here is json...\"}%s",
+        callback_validate ? callback : "", callback_validate ? ");" : "");
 
     return ret;
 }
 
-static int built_body(const int output_format, char *tpl_buf, const work_buf_t *work_buf)
+static int built_body(const int output_format, const char *callback, char *tpl_buf, const work_buf_t *work_buf)
 {
     int ret = 0;
 
@@ -97,7 +104,7 @@ static int built_body(const int output_format, char *tpl_buf, const work_buf_t *
             break;
 
         case OUTPUT_AS_JSON:
-            ret = built_json_body(tpl_buf, work_buf);
+            ret = built_json_body(callback, tpl_buf, work_buf);
             break;
 
         default:
@@ -134,7 +141,6 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
      * */
     int error_flag = 0;
     int output_format  = OUTPUT_AS_HTML;
-    int callback_validate = 0;
     char callback[16] = {0};
     char time_str[32] = {0};
 
@@ -214,23 +220,17 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     if (uri_callback && strlen(uri_callback))
     {
         snprintf(callback, sizeof(callback), "%s && %s(", uri_callback, uri_callback);
-        callback_validate = 1;
     }
 
     // switch s_action
     search_process(word, work_buf);
     /** end get and parse get parameter }*/
-    built_body(output_format, tpl_buf, work_buf);
+    built_body(output_format, callback, tpl_buf, work_buf);
 
     //处理输出header头
-    if (output_format)
-    {
-        evhttp_add_header(req->output_headers, "Content-Type", "application/x-javascript; charset=UTF-8");
-    }
-    else
-    {
-        evhttp_add_header(req->output_headers, "Content-Type", "text/html; charset=UTF-8");
-    }
+    evhttp_add_header(req->output_headers, "Content-Type", output_format ?
+        "application/x-javascript; charset=UTF-8" :
+            "text/html; charset=UTF-8");
     evhttp_add_header(req->output_headers, "Status", "200 OK");
     evhttp_add_header(req->output_headers, "Connection", "keep-alive");
     evhttp_add_header(req->output_headers, "Cache-Control", "no-cache");
@@ -239,43 +239,15 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
 
     //处理输出数据
     evbuffer_add_printf(buf, "%s", tpl_buf);
-/**
-    if (output_format)
-    {
-        evbuffer_add_printf(buf, "%s{\"stat\": 200,\
-\"info\": {\"notice\": \"welcome to libevent word.\",\
-\"version\": \"%s\",\
-\"time\": \"%s\"\
-},\
-\"language\": [\"c\", \"php\", \"javascript\", \"shell\",\
-\"python\", \"lua\", \"css/html\", \"sql\"]\
-}%s", callback_validate ? callback : "", VERSION,
-        time_str, callback_validate ? ")" : "");
-    }
-    else
-    {
-        evbuffer_add_printf(buf, "<html><body><head>\
-<title>Libevent Http Sever</title>\
-</head><body>");
-        evbuffer_add_printf(buf, "PROXY VERSION %s%s\n", VERSION, CRLF);
-        evbuffer_add_printf(buf, "------------------------------%s\n", CRLF);
-        //evbuffer_add_printf(buf, "YOU PASS name: %s%s\n", http_input_name ? http_input_name : "NONE", CRLF);
-        evbuffer_add_printf(buf, "Time: %s%s\n", time_str, CRLF);
-        if (NULL != word)
-        {
-            evbuffer_add_printf(buf, "word: %s, hash('%s') = %lu, table size = %d %s\n",
-                word, word, hash(word, gconfig.max_hash_table_size),
-                (int)gconfig.max_hash_table_size, CRLF);
-        }
-        evbuffer_add_printf(buf, "</body></html>");
-    }
-*/
 
     //返回code 200
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
+
     //释放内存
     evhttp_clear_headers(&http_query);
     evbuffer_free(buf);
+
+    return;
 }
 
 static void init_config()
