@@ -1,6 +1,6 @@
 #include "util.h"
 
-int get_localtime_str(char *src, size_t buf_len)
+int get_localtime_str(char *src, const size_t buf_len)
 {
     assert(NULL != src);
     assert(buf_len > 0);
@@ -140,7 +140,7 @@ void signal_setup()
     return (void)0;
 }
 
-indext_t hash(const char *key, int hash_table_size)
+indext_t hash(const char *key, const int hash_table_size)
 {
     indext_t hash_value = 0;
 
@@ -160,3 +160,54 @@ indext_t hash(const char *key, int hash_table_size)
 
     return hash_value % hash_table_size;
 }
+
+char * str_replace(char *src, const size_t buf_size, const char *search, const char *replace)
+{
+    char *p   = NULL;
+    char *pcp = NULL;
+    size_t s_len = 0;   /** stlen(search)*/
+
+    char t_buf[TMP_STR_BUF_LEN];
+
+    if ( NULL == src || buf_size <= 0 || NULL == replace || NULL == search)
+    {
+        goto FINISH;
+    }
+
+    t_buf[0] = '\0';
+    s_len = strlen(search);
+
+    pcp = src;
+    p   = strstr(src, search);
+
+    if (NULL == p)
+    {
+        goto FINISH;
+    }
+
+    while (NULL != p)
+    {
+        *p = '\0';
+        strncat(t_buf, pcp, TMP_STR_BUF_LEN - strlen(t_buf) - 1);
+        strncat(t_buf, replace, TMP_STR_BUF_LEN - strlen(t_buf) - 1);
+        p += s_len;
+        pcp = p;
+
+        p = strstr(pcp, search);
+    }
+
+    if (pcp)
+    {
+        strncat(t_buf, pcp, TMP_STR_BUF_LEN - strlen(t_buf) - 1);
+    }
+
+    if (strlen(t_buf))
+    {
+        memmove(src, t_buf, buf_size - 1);
+        src[buf_size - 1] = '\0';
+    }
+
+FINISH:
+    return src;
+}
+

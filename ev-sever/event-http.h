@@ -33,6 +33,8 @@
 #define OUTPUT_AS_HTML 0
 #define OUTPUT_AS_JSON 1
 
+#define TMP_STR_BUF_LEN     1024 * 20
+
 /** about index query */
 #define SINGLE_INDEX_SIZE   20
 #define MAX_HASH_TABLE_SIZE 49999
