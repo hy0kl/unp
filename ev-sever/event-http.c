@@ -10,9 +10,37 @@ search_buf_t  search_buf;
 
 int search_process(const char *word, work_buf_t *work_buf)
 {
-    int ret = 0;
+    int ret  = 0;
+    size_t i = 0;
 
+    indext_t hash_key = 0;
+    indext_t dict_id  = 0;
+    size_t count      = 0;
 
+    if (NULL == word || NULL == work_buf)
+    {
+        ret = -1;
+        goto FINISH;
+    }
+
+    hash_key = hash(word, gconfig.max_hash_table_size);
+    if (hash_key < 0)
+    {
+        work_buf->array_count = count;
+        ret = -1;
+        goto FINISH;
+    }
+
+    count = index_hash_table[hash_key].size;
+    work_buf->array_count = count;
+    for (i = 0; i < count; i++)
+    {
+        dict_id = index_hash_table[hash_key].index_chain[i] - 1;
+        snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s", index_dict_table[dict_id].query);
+        snprintf(work_buf->dict_data[i].brief, BRIEF_LEN, "%s", index_dict_table[dict_id].brief);
+    }
+
+FINISH:
     return ret;
 }
 
