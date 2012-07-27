@@ -68,6 +68,12 @@ prefix index---%s", CRLF);
             CRLF);
     }
 
+    if (0 == i)
+    {
+        p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf), "Sorry, it is no match data, \
+change keyword and try again.%s", CRLF);
+    }
+
 FINISH:
     return ret;
 }
@@ -92,6 +98,11 @@ static int built_body(const int output_format, char *tpl_buf, const work_buf_t *
 
         case OUTPUT_AS_JSON:
             ret = built_json_body(tpl_buf, work_buf);
+            break;
+
+        default:
+            snprintf(tpl_buf, TPL_BUF_LEN, "NO output format, \
+change set `format` and try again.%s", CRLF);
             break;
     }
 
