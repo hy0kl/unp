@@ -5,6 +5,5 @@
 *.dSYM
 a.out
 tags
-data/*
-data
-auto.sh
+sug-server
+hash

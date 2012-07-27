@@ -10,7 +10,7 @@ LIBDIR = -levent
 GCC = gcc
 GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 
-TARGET = ev-server
+TARGET = sug-server
 TOOL   = hash
 
 OBJS1  = event-http.o util.o
