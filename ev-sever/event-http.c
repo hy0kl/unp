@@ -8,7 +8,7 @@ index_term_t *index_hash_table = NULL;
 index_dict_t *index_dict_table = NULL;
 search_buf_t  search_buf;
 
-int search_process(const char *word, work_buf_t *work_buf)
+static int search_process(const char *word, work_buf_t *work_buf)
 {
     int ret  = 0;
     size_t i = 0;
@@ -44,6 +44,60 @@ FINISH:
     return ret;
 }
 
+static int built_html_body(char *tpl_buf, const work_buf_t *work_buf)
+{
+    int ret  = 0;
+    size_t i = 0;
+    char *p  = NULL;
+
+    if (NULL == tpl_buf || NULL == work_buf)
+    {
+        ret = -1;
+        goto FINISH;
+    }
+
+    p = tpl_buf;
+    p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf), "---simple suggestion system by \
+prefix index---%s", CRLF);
+
+    for (i = 0; i < work_buf->array_count; i++)
+    {
+        p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf), "query:%s, brief:%s%s",
+            work_buf->dict_data[i].query,
+            work_buf->dict_data[i].brief,
+            CRLF);
+    }
+
+FINISH:
+    return ret;
+}
+
+static int built_json_body(char *tpl_buf, const work_buf_t *work_buf)
+{
+    int ret = 0;
+    snprintf(tpl_buf, TPL_BUF_LEN, "{\"info\":\"Here is json...\"}");
+
+    return ret;
+}
+
+static int built_body(const int output_format, char *tpl_buf, const work_buf_t *work_buf)
+{
+    int ret = 0;
+
+    switch (output_format)
+    {
+        case OUTPUT_AS_HTML:
+            ret = built_html_body(tpl_buf, work_buf);
+            break;
+
+        case OUTPUT_AS_JSON:
+            ret = built_json_body(tpl_buf, work_buf);
+            break;
+    }
+
+    return ret;
+}
+
 /*
  * 处理模块
  * gw event-http.c -o http-sever -levent
@@ -55,7 +109,7 @@ FINISH:
 */
 static void api_proxy_handler(struct evhttp_request *req, void *arg)
 {
-    //初始化返回客户端的数据缓存
+    // 初始化返回客户端的数据缓存
     struct evbuffer *buf;
     buf = evbuffer_new();
 
@@ -155,6 +209,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     // switch s_action
     search_process(word, work_buf);
     /** end get and parse get parameter }*/
+    built_body(output_format, tpl_buf, work_buf);
 
     //处理输出header头
     if (output_format)
@@ -172,6 +227,8 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     evhttp_add_header(req->output_headers, "Server", "lhs");    /** libevent http server */
 
     //处理输出数据
+    evbuffer_add_printf(buf, "%s", tpl_buf);
+/**
     if (output_format)
     {
         evbuffer_add_printf(buf, "%s{\"stat\": 200,\
@@ -201,6 +258,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
         }
         evbuffer_add_printf(buf, "</body></html>");
     }
+*/
 
     //返回code 200
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
