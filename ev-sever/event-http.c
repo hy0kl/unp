@@ -16,6 +16,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
     indext_t hash_key = 0;
     indext_t dict_id  = 0;
     size_t count      = 0;
+    char lower_query[QUERY_LEN];
 
     if (NULL == word || NULL == work_buf)
     {
@@ -23,7 +24,9 @@ static int search_process(const char *word, work_buf_t *work_buf)
         goto FINISH;
     }
 
-    hash_key = hash(word, gconfig.max_hash_table_size);
+    snprintf(lower_query, QUERY_LEN, "%s", word);
+    strtolower(lower_query, QUERY_LEN, "utf-8");
+    hash_key = hash(lower_query, gconfig.max_hash_table_size);
     if (hash_key < 0)
     {
         work_buf->array_count = count;

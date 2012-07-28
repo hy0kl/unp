@@ -64,6 +64,7 @@ while (! feof($r_orig_fp))
     for ($i = 1; $i <= $query_len; $i++)
     {
         $prefix = mb_substr($query, 0, $i, DEFAULT_ENCODING);
+        $prefix = mb_strtolower($prefix, DEFAULT_ENCODING);
         //echo $prefix . "\n";
         if (isset($prefix_map[$prefix]))
         {
@@ -99,7 +100,8 @@ while (! feof($r_orig_fp))
             
             $sub_dict_id++;
 
-            $pos = mb_strpos($cmp_line, $prefix, 0, DEFAULT_ENCODING);
+            $lower_cmp_line = mb_strtolower($cmp_line, DEFAULT_ENCODING);
+            $pos = mb_strpos($lower_cmp_line, $prefix, 0, DEFAULT_ENCODING);
             if (false === $pos || $pos > 0)
             {
                 continue;
@@ -109,8 +111,9 @@ while (! feof($r_orig_fp))
             $hot = $sub_exp_data[1];
 
             $index = 0;
-            $cmd = './hash ' . $prefix . ' ' . $config['hash_table_size'];
+            $cmd = './hash "' . addslashes($prefix) . '" ' . $config['hash_table_size'];
             $cli_ret = exec($cmd, $output);
+            echo "hash({$prefix} = {$cli_ret})\n";
             $output = NULL;
             $index = $cli_ret + 0;
             $index_data['index'] = $index;
