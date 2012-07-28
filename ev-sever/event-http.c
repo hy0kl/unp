@@ -92,13 +92,36 @@ static int built_json_body(const char *callback, char *tpl_buf, const work_buf_t
     int ret = 0;
     int callback_validate = 0;
 
+    size_t i = 0;
+    char *p  = NULL;
+
+    if (NULL == tpl_buf || NULL == work_buf)
+    {
+        ret = -1;
+        goto FINISH;
+    }
+
     if ('\0' != callback[0])
     {
         callback_validate = 1;
     }
-    snprintf(tpl_buf, TPL_BUF_LEN, "%s{\"info\":\"Here is json...\"}%s",
-        callback_validate ? callback : "", callback_validate ? ");" : "");
 
+    p = tpl_buf;
+    p += snprintf(tpl_buf, TPL_BUF_LEN, "%s{\"stat\": \"200\", \"res_num\": \"%lu\", \"result\": [",
+        callback_validate ? callback : "", work_buf->array_count);
+
+    for (i = 0; i < work_buf->array_count; i++)
+    {
+        p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf),
+            "{\"query\": \"%s\", \"brief\": \"%s\"}%s",
+            work_buf->dict_data[i].query,
+            work_buf->dict_data[i].brief,
+            i + 1 >= work_buf->array_count ? "" : ",");
+    }
+    p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf), "]}%s",
+        callback_validate ? ");" : "");
+
+FINISH:
     return ret;
 }
 
@@ -151,7 +174,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
      * */
     int error_flag = 0;
     int output_format  = OUTPUT_AS_HTML;
-    char callback[16] = {0};
+    char callback[64] = {0};
     char time_str[32] = {0};
 
     /** some action */
@@ -230,7 +253,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     }
     if (uri_callback && strlen(uri_callback))
     {
-        snprintf(callback, sizeof(callback), "%s && %s(", uri_callback, uri_callback);
+        snprintf(callback, sizeof(callback), "window.%s && window.%s(", uri_callback, uri_callback);
     }
 
     // switch s_action
@@ -240,7 +263,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
 
     //处理输出header头
     evhttp_add_header(req->output_headers, "Content-Type", output_format ?
-        "application/x-javascript; charset=UTF-8" :
+        "application/json; charset=UTF-8" :
             "text/html; charset=UTF-8");
     evhttp_add_header(req->output_headers, "Status", "200 OK");
     evhttp_add_header(req->output_headers, "Connection", "keep-alive");

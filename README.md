@@ -24,3 +24,7 @@ The usage of simple suggestion system by prefix index
 History
 ------
     2012.08.27 finish one demo version.
+
+Thanks
+------
+    Rick: yyr168@gmail.com

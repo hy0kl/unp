@@ -1,0 +1,106 @@
+﻿<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Ajax Auto Suggest</title>
+<style type="text/css">
+body {
+    font-family: Helvetica;
+    font-size: 11px;
+    color: #000;
+}
+
+h3 {
+    margin: 0px;
+    padding: 0px;	
+}
+
+.suggestionsBox {
+    position: relative;
+    left: 5px;
+    margin: 10px 0px 0px 0px;
+    width: 200px;
+    background-color: #212427;
+    -moz-border-radius: 7px;
+    -webkit-border-radius: 7px;
+    border: 2px solid #000;	
+    color: #fff;
+}
+
+.suggestionList {
+    margin: 0px;
+    padding: 0px;
+}
+
+.suggestionList li {
+    
+    margin: 0px 0px 3px 0px;
+    padding: 3px;
+    cursor: pointer;
+}
+
+.suggestionList li:hover {
+    background-color: #659CD8;
+}
+</style>
+<!-- script id="c-sug" type="text/javascript" src=""></script -->
+</head>
+<body>
+	<div>
+		<form>
+			<div>
+				Type your keyword:
+				<br />
+				<input type="text" size="30" value="" id="inputString" onkeyup="lookup(this.value);" onblur="fill();" />
+			</div>
+			
+			<div class="suggestionsBox" id="suggestions" style="display: none;">
+				<img src="upArrow.png" style="position: relative; top: -12px; left: 15px;" alt="upArrow" />
+				<div class="suggestionList" id="autoSuggestionsList">
+					&nbsp;
+				</div>
+			</div>
+		</form>
+	</div>
+
+</body>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+<script type="text/javascript">
+var abc = function(json)
+{
+    var html = [];
+    if ('200' == json.stat && json.res_num - 0 > 0)
+    {
+        var html = []
+        for (var i = 0; i < json.res_num - 0; i++)
+        {
+            var obj = json.result[i];
+            html.push('<li onClick="fill(\'' + obj.query + '\');">' + obj.query + '</li>');
+        }
+        $('#suggestions').show();
+        $('#autoSuggestionsList').html(html.join(''));
+    }
+}
+
+function lookup(inputString) {
+    if(inputString.length == 0) {
+        // Hide the suggestion box.
+        $('#suggestions').hide();
+    } else {
+        $('#c-sug').remove();
+        var api = 'http://127.0.0.1:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
+        var oHead = document.getElementsByTagName('HEAD').item(0);
+        var oScript= document.createElement("script");
+        oScript.type = "text/javascript";
+        oScript.id = "c-sug";
+        oScript.src = api;
+        oHead.appendChild(oScript);
+        //$('#c-sug').attr('src', api);
+    }
+} // lookup
+
+function fill(thisValue) {
+    $('#inputString').val(thisValue);
+    setTimeout("$('#suggestions').hide();", 500);
+}
+</script>
+</html>
