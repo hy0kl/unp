@@ -111,9 +111,9 @@ while (! feof($r_orig_fp))
             $hot = $sub_exp_data[1];
 
             $index = 0;
-            $cmd = './hash "' . addslashes($prefix) . '" ' . $config['hash_table_size'];
+            $cmd = './hash "' . str_replace('"', '\"', $prefix) . '" ' . $config['hash_table_size'];
             $cli_ret = exec($cmd, $output);
-            echo "hash({$prefix} = {$cli_ret})\n";
+            //echo "hash({$prefix} = {$cli_ret})\n";
             $output = NULL;
             $index = $cli_ret + 0;
             $index_data['index'] = $index;
