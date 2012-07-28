@@ -132,7 +132,7 @@ change set `format` and try again.%s", CRLF);
  * TODO: add lua to create JSON data.
  * TODO: add log logic.
  * TODO: add search logic.
- * TODO: str_replace()
+ * TODE: add pid logic.
  *
 */
 static void api_proxy_handler(struct evhttp_request *req, void *arg)

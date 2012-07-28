@@ -3,6 +3,7 @@ date_default_timezone_set('Asia/Hong_Kong');
 define('SEPARATOR', "\t");
 define('TIME_STR', date('Y-m-d', time()));
 define('DEFAULT_ENCODING', 'UTF-8');
+define('COMMENT_LINE_FLAG', '#');
 
 $config = array(
     'hash_table_size' => 49999,
@@ -35,7 +36,7 @@ while (! feof($r_orig_fp))
     $line = str_replace(array("\n", "\r",), '', $line);
 
     $str_len = mb_strlen($line, DEFAULT_ENCODING);
-    if ($str_len <= 0)
+    if ($str_len <= 0 || COMMENT_LINE_FLAG == $line[0])
     {
         continue;
     }
@@ -93,7 +94,7 @@ while (! feof($r_orig_fp))
         while (! feof($t_fp))
         {
             $cmp_line = fgets($t_fp, 2048);
-            if (! strlen($cmp_line))
+            if (strlen($cmp_line) <= 0 || COMMENT_LINE_FLAG == $cmp_line[0])
             {
                 continue; 
             }
