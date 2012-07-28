@@ -25,5 +25,7 @@ indext_t hash(const char *key, const int hash_table_size);
  * */
 char * str_replace(char *src, const size_t buf_size, const char *search, const char *replace);
 
+char *strtolower(char *src, const size_t buf_len, const char *encoding);
+
 #endif
 
