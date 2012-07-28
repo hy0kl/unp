@@ -50,6 +50,9 @@ static int built_html_body(char *tpl_buf, const work_buf_t *work_buf)
     size_t i = 0;
     char *p  = NULL;
 
+    char query[QUERY_LEN];
+    char brief[BRIEF_LEN];
+
     if (NULL == tpl_buf || NULL == work_buf)
     {
         ret = -1;
@@ -62,10 +65,13 @@ prefix index---%s", CRLF);
 
     for (i = 0; i < work_buf->array_count; i++)
     {
+        snprintf(query, QUERY_LEN, "%s", work_buf->dict_data[i].query);
+        snprintf(brief, BRIEF_LEN, "%s", work_buf->dict_data[i].brief);
+        str_replace(query, QUERY_LEN, "\\", "");
+        str_replace(brief, BRIEF_LEN, "\\", "");
+
         p += snprintf(p, TPL_BUF_LEN - (p - tpl_buf), "query:%s, brief:%s%s",
-            work_buf->dict_data[i].query,
-            work_buf->dict_data[i].brief,
-            CRLF);
+            query, brief, CRLF);
     }
 
     if (0 == i)
