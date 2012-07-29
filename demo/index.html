@@ -1,7 +1,7 @@
 ﻿<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Ajax Auto Suggest</title>
+<title>Simple suggestion system by prefix index</title>
 <style type="text/css">
 body {
     font-family: Helvetica;
@@ -11,7 +11,7 @@ body {
 
 h3 {
     margin: 0px;
-    padding: 0px;	
+    padding: 0px;
 }
 
 .suggestionsBox {
@@ -22,7 +22,7 @@ h3 {
     background-color: #212427;
     -moz-border-radius: 7px;
     -webkit-border-radius: 7px;
-    border: 2px solid #000;	
+    border: 2px solid #000;
     color: #fff;
 }
 
@@ -32,7 +32,7 @@ h3 {
 }
 
 .suggestionList li {
-    
+
     margin: 0px 0px 3px 0px;
     padding: 3px;
     cursor: pointer;
@@ -45,26 +45,26 @@ h3 {
 <!-- script id="c-sug" type="text/javascript" src=""></script -->
 </head>
 <body>
-	<div>
-		<form>
-			<div>
-				Type your keyword:
-				<br />
-				<input type="text" size="30" value="" id="inputString" onkeyup="lookup(this.value);" onblur="fill();" />
-			</div>
-			
-			<div class="suggestionsBox" id="suggestions" style="display: none;">
-				<img src="upArrow.png" style="position: relative; top: -12px; left: 15px;" alt="upArrow" />
-				<div class="suggestionList" id="autoSuggestionsList">
-					&nbsp;
-				</div>
-			</div>
-		</form>
-	</div>
+<div>
+    <form>
+        <div>
+            Type your keyword:
+            <br />
+            <input type="text" size="30" value="" id="inputString" />
+        </div>
 
+        <div class="suggestionsBox" id="suggestions" style="display: none;">
+            <img src="upArrow.png" style="position: relative; top: -12px; left: 15px;" alt="upArrow" />
+            <div class="suggestionList" id="autoSuggestionsList">
+                &nbsp;
+            </div>
+        </div>
+    </form>
+</div>
 </body>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
 <script type="text/javascript">
+var suggest = {};
 var abc = function(json)
 {
     var html = [];
@@ -81,7 +81,8 @@ var abc = function(json)
     }
 }
 
-function lookup(inputString) {
+suggest.lookup = function (inputString)
+{
     if(inputString.length == 0) {
         // Hide the suggestion box.
         $('#suggestions').hide();
@@ -98,9 +99,20 @@ function lookup(inputString) {
     }
 } // lookup
 
-function fill(thisValue) {
+suggest.fill = function(thisValue)
+{
     $('#inputString').val(thisValue);
     setTimeout("$('#suggestions').hide();", 500);
 }
+
+$(document).ready(function(){
+    var sug = $('#inputString');
+    //sug.bind('keydown keypress', function(){
+    sug.bind('input', function(){
+        suggest.lookup($(this).attr('value'));
+    }).bind('blur', function(){
+        suggest.fill($(this).attr('value'));
+    });
+});
 </script>
 </html>
