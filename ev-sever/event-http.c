@@ -1,3 +1,6 @@
+/**
+ * by: hy0kle@gmail.com
+ * */
 #include "util.h"
 /**
  * global variables

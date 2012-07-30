@@ -28,7 +28,9 @@ History
 Thanks
 ------
     Rick: yyr168@gmail.com
+    fengerhao
 
 See Demo
 --------
     demo/index.html
+    NO support for IE.
