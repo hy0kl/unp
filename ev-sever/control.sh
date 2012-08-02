@@ -8,7 +8,7 @@ work_path="/Users/hy0kl/Study/unp/ev-sever"
 prime_number=99999989
 dict_number=8000
 
-Usage="$0 <runtype:start|stop|make|build>"
+Usage="$0 <runtype:start|stop|make|build|hash>"
 if [ $# -lt 1 ];
 then
     echo "$Usage"
@@ -16,7 +16,9 @@ then
 fi
 runtype=$1
 
-if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] && [ "parse" != "$runtype" ] && [ "build" != "$runtype" ] && [ "make" != "$runtype" ];
+if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] &&
+    [ "parse" != "$runtype" ] && [ "build" != "$runtype" ] &&
+    [ "make" != "$runtype" ] && [ "hash" != "$runtype" ];
 then
     echo "$Usage"
     exit 1
@@ -118,3 +120,19 @@ if [ "build" == "$runtype" ]; then
 
     exit 0;
 fi
+
+if [ "hash" == "$runtype" ]; then
+    argc=$#
+    if [ "$argc" -lt 2 ];
+    then
+        echo "Need query word"
+        echo "Usage: $0 hash <query-word>"
+        exit -1
+    fi
+    query_word=$2
+    "$work_path/hash" "$query_word" "$prime_number"
+    echo ""
+
+    exit 0;
+fi
+

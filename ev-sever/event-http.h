@@ -65,8 +65,9 @@ typedef unsigned long int indext_t;
 /** 倒排表单条数据 */
 typedef struct _index_term_t
 {
-    size_t   size;   /** count(index_chain) */
-    indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
+    short     size;   /** count(index_chain) */
+    //indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
+    indext_t *index_chain;  /** 单个索引链*/
 } index_term_t;
 
 /** 正排表单条数据 */

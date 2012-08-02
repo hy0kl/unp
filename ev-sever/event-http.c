@@ -525,7 +525,21 @@ static int init_search_library()
         ret = -1;
         goto FINISH;
     }
-    memset(index_hash_table, 0, gconfig.max_hash_table_size);
+    //memset(index_hash_table, 0, gconfig.max_hash_table_size);
+    for (i = 0; i < gconfig.max_hash_table_size; i++)
+    {
+        index_hash_table[i].size = 0;
+
+        size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
+        index_hash_table[i].index_chain = (indext_t *)malloc(size);
+        if (NULL == index_hash_table[i].index_chain)
+        {
+            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_chain, need size: %ld\n",
+                i, size);
+            ret = -1;
+            goto FINISH;
+        }
+    }
 
     /** 申请正排表的内存空间 */
     size = sizeof(index_dict_t) * gconfig.max_dict_table_size;
