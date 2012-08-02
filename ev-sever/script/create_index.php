@@ -6,7 +6,8 @@ define('DEFAULT_ENCODING', 'UTF-8');
 define('COMMENT_LINE_FLAG', '#');
 
 $config = array(
-    'hash_table_size' => 49999,
+    //'hash_table_size' => 49999,
+    'hash_table_size' => 9999991,
     'original_file'   => './data/original', 
     'inverted_index'  => './data/inverted_index',
     'index_dict'      => './data/index_dict',
