@@ -16,7 +16,7 @@ then
 fi
 runtype=$1
 
-if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] && [ "parse" != "$runtype" ] && [ "build" != "$runtype" ];
+if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] && [ "parse" != "$runtype" ] && [ "build" != "$runtype" ] && [ "make" != "$runtype" ];
 then
     echo "$Usage"
     exit 1
