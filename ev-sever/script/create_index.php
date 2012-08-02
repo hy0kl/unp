@@ -4,6 +4,8 @@ define('SEPARATOR', "\t");
 define('TIME_STR', date('Y-m-d', time()));
 define('DEFAULT_ENCODING', 'UTF-8');
 define('COMMENT_LINE_FLAG', '#');
+define('MB_LENGTH', 8);
+define('EN_LENGTH', 12);
 
 $config = array(
     //'hash_table_size' => 49999,
@@ -63,7 +65,13 @@ while (! feof($r_orig_fp))
     $prefix = '';
 
     $query_len = mb_strlen($query, DEFAULT_ENCODING);
-    for ($i = 1; $i <= $query_len; $i++)
+    $narrow_len= strlen($query);
+    $char_length = MB_LENGTH;
+    if ($query_len == $narrow_len)
+    {
+        $char_length = EN_LENGTH;
+    }
+    for ($i = 1; $i <= $query_len && $i <= $char_length; $i++)
     {
         $prefix = mb_substr($query, 0, $i, DEFAULT_ENCODING);
         $prefix = mb_strtolower($prefix, DEFAULT_ENCODING);

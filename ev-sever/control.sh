@@ -10,7 +10,7 @@ then
 fi
 runtype=$1
 
-if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] && [ "parse" != "$runtype" ];
+if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] && [ "parse" != "$runtype" ] && [ "build" != "$runtype" ];
 then
     echo "$Usage"
     exit 1
@@ -73,8 +73,7 @@ if [ "start" == "$runtype" ]; then
         exit -1
     fi
 
-    create_data
-    $work_path/sug-server -i "$work_path/data/inverted_index" -x "$work_path/data/index_dict" -s 9999991 -a 2000000
+    $work_path/sug-server -i "$work_path/data/inverted_index" -x "$work_path/data/index_dict" -s 9999991 -a 50000
 
     exit 0;
 fi
