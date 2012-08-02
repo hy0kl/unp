@@ -7,9 +7,17 @@ define('COMMENT_LINE_FLAG', '#');
 define('MB_LENGTH', 8);
 define('EN_LENGTH', 12);
 
+if (! ($argc > 1))
+{
+    echo 'Usage: ' . __FILE__ . " <prime_number>\n";
+    exit(-1);
+}
+
+$prime_number = $argv[1];
+
 $config = array(
-    //'hash_table_size' => 49999,
-    'hash_table_size' => 9999991,
+    //'hash_table_size' => 99999989,  /** 1亿中最大的素数 */
+    'hash_table_size' => $prime_number,
     'original_file'   => './data/original', 
     'inverted_index'  => './data/inverted_index',
     'index_dict'      => './data/index_dict',

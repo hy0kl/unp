@@ -1,6 +1,12 @@
 #!/bin/bash
 #set -x
+
+### please fix next line for your system  ###
 work_path="/Users/hy0kl/Study/unp/ev-sever"
+### !!! ###
+
+prime_number=99999989
+dict_number=8000
 
 Usage="$0 <runtype:start|stop|make|build>"
 if [ $# -lt 1 ];
@@ -31,7 +37,8 @@ find "$work_path/data/" -type f -mtime +30 -exec rm {} \;
 function create_data()
 {
     # create inverted index data and dict data
-    php script/create_index.php
+    number=$1
+    php script/create_index.php $number
     ret=$?
     if ((0 != ret))
     then
@@ -73,7 +80,7 @@ if [ "start" == "$runtype" ]; then
         exit -1
     fi
 
-    $work_path/sug-server -i "$work_path/data/inverted_index" -x "$work_path/data/index_dict" -s 9999991 -a 50000
+    $work_path/sug-server -i "$work_path/data/inverted_index" -x "$work_path/data/index_dict" -s $prime_number -a $dict_number
 
     exit 0;
 fi
@@ -98,7 +105,7 @@ fi
 # build data
 if [ "build" == "$runtype" ]; then
     echo "build index and dict data"
-    create_data
+    create_data $prime_number
 
     ret=$?
     if ((0 != ret))
