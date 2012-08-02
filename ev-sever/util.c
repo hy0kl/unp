@@ -151,7 +151,7 @@ indext_t hash(const char *key, const int hash_table_size)
 
     while ((u_char)*key)
     {
-        hash_value = (hash_value << 5) + (u_char)*key++;
+        hash_value = hash_value + (hash_value << 5) + (u_char)*key++;
     }
 
 #if (_DEBUG_)
