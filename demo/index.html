@@ -16,9 +16,9 @@ h3 {
 
 .suggestionsBox {
     position: relative;
-    left: 5px;
+    left: 120px;
     margin: 10px 0px 0px 0px;
-    width: 200px;
+    width: 250px;
     background-color: #212427;
     -moz-border-radius: 7px;
     -webkit-border-radius: 7px;
@@ -41,15 +41,26 @@ h3 {
 .suggestionList li:hover {
     background-color: #659CD8;
 }
+
+.notice {
+    margin: 5px;
+    padding: 5px;
+    border: 1px solid red;
+}
+
+.search {
+    margin: 5px;
+    padding: 5px;
+}
 </style>
 <!-- script id="c-sug" type="text/javascript" src=""></script -->
 </head>
 <body>
 <div>
+    <div class="notice">NO support for IE!!!</div>
     <form>
-        <div>
+        <div class="search">
             Type your keyword:
-            <br />
             <input type="text" size="30" value="" id="inputString" />
         </div>
 
@@ -88,7 +99,7 @@ suggest.lookup = function (inputString)
         $('#suggestions').hide();
     } else {
         $('#c-sug').remove();
-        var api = 'http://127.0.0.1:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
+        var api = 'http://60.28.202.26:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
         var oHead = document.getElementsByTagName('HEAD').item(0);
         var oScript= document.createElement("script");
         oScript.type = "text/javascript";
