@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #set -x
 work_path="/Users/hy0kl/Study/unp/ev-sever"
 
