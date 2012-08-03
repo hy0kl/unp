@@ -5,7 +5,9 @@
 work_path="/Users/hy0kl/Study/unp/ev-sever"
 ### !!! ###
 
-prime_number=99999989
+# 1 亿内最大的素数
+#prime_number=99999989
+prime_number=9999991
 dict_number=8000
 
 Usage="$0 <runtype:start|stop|make|build|hash>"

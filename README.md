@@ -17,7 +17,9 @@ The usage of simple suggestion system by prefix index
     git clone git://github.com/hy0kl/unp.git
     cd unp/ev-sever
     vi auto.sh #change the work_path for your system.
-    ./auto.sh
+    ./control.sh make
+    ./control.sh build
+    ./control.sh start
 
     visit: http://localhost:8080/?word=%E4%B8%80
 

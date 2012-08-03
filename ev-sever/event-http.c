@@ -7,19 +7,23 @@
  * */
 config_t      gconfig;
 
-index_term_t *index_hash_table = NULL;
+hash_list_t  *index_hash_table = NULL;
 index_dict_t *index_dict_table = NULL;
 search_buf_t  search_buf;
 
 static int search_process(const char *word, work_buf_t *work_buf)
 {
     int ret  = 0;
+    int find = 0;
     size_t i = 0;
 
     indext_t hash_key = 0;
     indext_t dict_id  = 0;
     size_t count      = 0;
     char lower_query[QUERY_LEN];
+    char lower_dict_query[QUERY_LEN];
+
+    hash_list_t *hash_item = NULL;
 
     if (NULL == word || NULL == work_buf)
     {
@@ -37,11 +41,36 @@ static int search_process(const char *word, work_buf_t *work_buf)
         goto FINISH;
     }
 
-    count = index_hash_table[hash_key].size;
+    find = 0;
+    hash_item = &(index_hash_table[hash_key]);
+    while (hash_item && hash_item->index_item->size > 0)
+    {
+        i = 0;
+        dict_id = hash_item->index_item->index_chain[i];
+        snprintf(lower_dict_query, QUERY_LEN, "%s",
+            index_dict_table[dict_id].query);
+        strtolower(lower_dict_query, QUERY_LEN, "utf-8");
+        if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
+        {
+            find = 1;
+            goto FOUND;
+        }
+
+        hash_item = hash_item->next;
+    }
+FOUND:
+    if (! find)
+    {
+        work_buf->array_count = count;
+        ret = -1;
+        goto FINISH;
+    }
+
+    count = hash_item->index_item->size;
     work_buf->array_count = count;
     for (i = 0; i < count; i++)
     {
-        dict_id = index_hash_table[hash_key].index_chain[i] - 1;
+        dict_id = hash_item->index_item->index_chain[i] - 1;
         snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s", index_dict_table[dict_id].query);
         snprintf(work_buf->dict_data[i].brief, BRIEF_LEN, "%s", index_dict_table[dict_id].brief);
     }
@@ -337,9 +366,13 @@ static int load_index()
     size_t i = 0;
     size_t array_count = 0;
     size_t array_index = 0;
+    size_t size = 0;
 
     char query[QUERY_LEN] = {0};
     char brief[BRIEF_LEN] = {0};
+
+    hash_list_t *hash_item     = NULL;
+    hash_list_t *tmp_hash_item = NULL;
 
     /** load inverted index data { */
     /**
@@ -385,6 +418,44 @@ static int load_index()
         }
         array_index = (size_t)atoll(p) % gconfig.max_hash_table_size;
         //logprintf("inverted index: %lu", array_index);
+        hash_item = &(index_hash_table[array_index]);
+        while (hash_item->index_item->size > 0)
+        {
+            size = sizeof(hash_list_t);
+            tmp_hash_item = (hash_list_t *)malloc(size);
+            if (NULL == tmp_hash_item)
+            {
+                fprintf(stderr, "Can NOT malloc memory for tmp_hash_item, need size: %ld\n",
+                    size);
+                ret = -1;
+                goto FINISH;
+            }
+            tmp_hash_item->next = NULL;
+
+            size = sizeof(index_item_t);
+            tmp_hash_item->index_item = (index_item_t *)malloc(size);
+            if (NULL == tmp_hash_item->index_item)
+            {
+                fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item, need size: %ld\n",
+                    size);
+                ret = -1;
+                goto FINISH;
+            }
+            tmp_hash_item->index_item->size = 0;
+
+            size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
+            tmp_hash_item->index_item->index_chain = (indext_t *)malloc(size);
+            if (NULL == tmp_hash_item->index_item->index_chain)
+            {
+                fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item->index_chain, need size: %ld\n",
+                    size);
+                ret = -1;
+                goto FINISH;
+            }
+
+            hash_item->next = tmp_hash_item;
+            hash_item = tmp_hash_item;
+        }
 
         p = find + 1;
         for (i = 0, array_count = 0; i < SINGLE_INDEX_SIZE; i++)
@@ -399,13 +470,13 @@ static int load_index()
                     continue;
                 }
                 //logprintf("every dict id: %lu", dict_id);
-                index_hash_table[array_index].index_chain[array_count] = dict_id;
+                hash_item->index_item->index_chain[array_count] = dict_id;
 
                 p = find + 1;
                 array_count++;
             }
         }
-        index_hash_table[array_index].size = array_count;
+        hash_item->index_item->size = array_count;
 #if (_DEBUG)
         logprintf("index_hash_table[%lu].size = %lu", array_index, array_count);
 #endif
@@ -516,8 +587,8 @@ static int init_search_library()
     size_t sub_size = 0;
 
     /** 申请倒排表的内存空间 */
-    size = sizeof(index_term_t) * gconfig.max_hash_table_size;
-    index_hash_table = (index_term_t *)malloc(size);
+    size = sizeof(hash_list_t) * gconfig.max_hash_table_size;
+    index_hash_table = (hash_list_t *)malloc(size);
     if (NULL == index_hash_table)
     {
         fprintf(stderr, "Can NOT malloc memory for hash table, need size: %ld\n",
@@ -528,17 +599,29 @@ static int init_search_library()
     //memset(index_hash_table, 0, gconfig.max_hash_table_size);
     for (i = 0; i < gconfig.max_hash_table_size; i++)
     {
-        index_hash_table[i].size = 0;
+        index_hash_table[i].next = NULL;
 
-        size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
-        index_hash_table[i].index_chain = (indext_t *)malloc(size);
-        if (NULL == index_hash_table[i].index_chain)
+        size = sizeof(index_item_t);
+        index_hash_table[i].index_item = (index_item_t *)malloc(size);
+        if (NULL == index_hash_table[i].index_item)
         {
-            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_chain, need size: %ld\n",
+            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item, need size: %ld\n",
                 i, size);
             ret = -1;
             goto FINISH;
         }
+
+
+        size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
+        index_hash_table[i].index_item->index_chain = (indext_t *)malloc(size);
+        if (NULL == index_hash_table[i].index_item->index_chain)
+        {
+            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item->index_chain, need size: %ld\n",
+                i, size);
+            ret = -1;
+            goto FINISH;
+        }
+        index_hash_table[i].index_item->size = 0;
     }
 
     /** 申请正排表的内存空间 */

@@ -63,12 +63,19 @@ typedef struct _config_t
 
 typedef unsigned long int indext_t;
 /** 倒排表单条数据 */
-typedef struct _index_term_t
+typedef struct _index_item_t
 {
     short     size;   /** count(index_chain) */
     //indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
-    indext_t *index_chain;  /** 单个索引链*/
-} index_term_t;
+    indext_t *index_chain;  /** 单个索引链,目前只取 TOP20 */
+} index_item_t;
+
+/** hash table list, hash 表拉链,解决冲突 */
+typedef struct _hash_list_t
+{
+    index_item_t        *index_item;
+    struct _hash_list_t *next;
+} hash_list_t;
 
 /** 正排表单条数据 */
 typedef struct _index_dict_t
@@ -104,7 +111,7 @@ enum s_action_t
  * global
  * */
 extern config_t      gconfig;
-extern index_term_t *index_hash_table;  /** 倒排表 */
+extern hash_list_t  *index_hash_table;  /** 倒排表,开放拉链表  */
 extern index_dict_t *index_dict_table;  /** 正排表 */
 extern search_buf_t  search_buf;
 
