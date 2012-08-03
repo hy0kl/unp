@@ -25,7 +25,8 @@ The usage of simple suggestion system by prefix index
 
 History
 ------
-    2012.08.27 finish one demo version.
+    2012.07.27 finish one demo version.
+    2012.08.03 通过开拉链,解决了 hash 碰撞的问题
 
 Thanks
 ------
