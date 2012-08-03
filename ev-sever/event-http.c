@@ -46,7 +46,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
     while (hash_item && hash_item->index_item->size > 0)
     {
         i = 0;
-        dict_id = hash_item->index_item->index_chain[i];
+        dict_id = hash_item->index_item->index_chain[i] - 1;
         snprintf(lower_dict_query, QUERY_LEN, "%s",
             index_dict_table[dict_id].query);
         strtolower(lower_dict_query, QUERY_LEN, "utf-8");
@@ -62,6 +62,9 @@ FOUND:
     if (! find)
     {
         work_buf->array_count = count;
+#if (_DEBUG)
+        fprintf(stderr, "Can NOT find data in list.[%s]", word);
+#endif
         ret = -1;
         goto FINISH;
     }
