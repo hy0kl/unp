@@ -14,7 +14,6 @@ search_buf_t  search_buf;
 static int search_process(const char *word, work_buf_t *work_buf)
 {
     int ret  = 0;
-    int find = 0;
     size_t i = 0;
 
     indext_t hash_key = 0;
@@ -41,7 +40,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
         goto FINISH;
     }
 
-    find = 0;
+    count = 0;
     hash_item = &(index_hash_table[hash_key]);
     while (hash_item && hash_item->index_item->size > 0)
     {
@@ -52,24 +51,23 @@ static int search_process(const char *word, work_buf_t *work_buf)
         strtolower(lower_dict_query, QUERY_LEN, "utf-8");
         if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
         {
-            find = 1;
+            count = hash_item->index_item->size;
             goto FOUND;
         }
 
         hash_item = hash_item->next;
     }
 FOUND:
-    if (! find)
+    if (! count)
     {
-        work_buf->array_count = count;
 #if (_DEBUG)
         fprintf(stderr, "Can NOT find data in list.[%s]", word);
 #endif
+        work_buf->array_count = count;
         ret = -1;
         goto FINISH;
     }
 
-    count = hash_item->index_item->size;
     work_buf->array_count = count;
     for (i = 0; i < count; i++)
     {
@@ -189,8 +187,7 @@ change set `format` and try again.%s", CRLF);
  * TODO: add getopt() and gconf.
  * TODO: add lua to create JSON data.
  * TODO: add log logic.
- * TODO: add search logic.
- * TODE: add pid logic.
+ * TODO: add pid logic.
  *
 */
 static void api_proxy_handler(struct evhttp_request *req, void *arg)
