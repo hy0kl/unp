@@ -80,7 +80,7 @@ FINISH:
     return ret;
 }
 
-static int built_html_body(char *tpl_buf, const work_buf_t *work_buf)
+static int build_html_body(char *tpl_buf, const work_buf_t *work_buf)
 {
     int ret  = 0;
     size_t i = 0;
@@ -120,7 +120,7 @@ FINISH:
     return ret;
 }
 
-static int built_json_body(const char *callback, char *tpl_buf, const work_buf_t *work_buf)
+static int build_json_body(const char *callback, char *tpl_buf, const work_buf_t *work_buf)
 {
     int ret = 0;
     int callback_validate = 0;
@@ -158,18 +158,18 @@ FINISH:
     return ret;
 }
 
-static int built_body(const int output_format, const char *callback, char *tpl_buf, const work_buf_t *work_buf)
+static int build_body(const int output_format, const char *callback, char *tpl_buf, const work_buf_t *work_buf)
 {
     int ret = 0;
 
     switch (output_format)
     {
         case OUTPUT_AS_HTML:
-            ret = built_html_body(tpl_buf, work_buf);
+            ret = build_html_body(tpl_buf, work_buf);
             break;
 
         case OUTPUT_AS_JSON:
-            ret = built_json_body(callback, tpl_buf, work_buf);
+            ret = build_json_body(callback, tpl_buf, work_buf);
             break;
 
         default:
@@ -291,7 +291,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     // switch s_action
     search_process(word, work_buf);
     /** end get and parse get parameter }*/
-    built_body(output_format, callback, tpl_buf, work_buf);
+    build_body(output_format, callback, tpl_buf, work_buf);
 
     //处理输出header头
     evhttp_add_header(req->output_headers, "Content-Type", output_format ?
