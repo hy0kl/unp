@@ -1,0 +1,10 @@
+Source: hz2py
+Section: text
+Priority: optional
+Maintainer: Lu Hua <emptyhua@gmail.com>
+Build-Depends: debhelper (>= 7.0.5)
+Standards-Version: VERSION 
+
+Package: hz2py
+Architecture: any
+Description: convert utf8 string to Pinyin 

@@ -1,0 +1,4 @@
+sh makedeb.sh natty
+sh makedeb.sh maverick
+sh makedeb.sh lucid
+sh makedeb.sh oneiric
