@@ -12,6 +12,7 @@ GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 
 TARGET = sug-server
 TOOL   = hash
+CONTRIB= hz2py
 
 OBJS1  = event-http.o util.o
 OBJS2  = hash.o util.o
@@ -33,8 +34,8 @@ $(TOOL) : $(OBJS2)
 
 .PHONY: clean
 clean:
-	rm -f $(TARGET) $(OBJS1) $(OBJS2)
+	rm -rf $(TARGET) $(OBJS1) $(OBJS2) $(TOOL) $(CONTRIB)
 
 .PHONY: cleanobj
 cleanobj:
-	rm -f $(OBJS1) $(OBJS2)
+	rm -rf $(OBJS1) $(OBJS2)

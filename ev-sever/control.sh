@@ -1,9 +1,13 @@
 #!/bin/bash
 #set -x
-
 ### please fix next line for your system  ###
-work_path="/Users/hy0kl/Study/unp/ev-sever"
+abs_path="$HOME/Study/unp"
 ### !!! ###
+
+work_path="${abs_path}/ev-sever"
+contrib_path="${abs_path}/contrib"
+
+hz2py="${contrib_path}/hz2py"
 
 # 1 亿内最大的素数
 #prime_number=99999989
@@ -91,8 +95,15 @@ fi
 
 # make
 if [ "make" == "$runtype" ]; then
+    argc=$#
+
     echo "Let's make"
-    make
+    if ((argc > 1))
+    then
+        make $2
+    else
+        make
+    fi
 
     ret=$?
     if ((0 != ret))
@@ -101,6 +112,29 @@ if [ "make" == "$runtype" ]; then
         exit -1;
     else
         echo "auto compiled success!"
+    fi
+
+    if ((argc > 1))
+    then
+        cd ${hz2py} && make $2
+    else
+        cd ${hz2py} && make
+    fi
+
+    ret=$?
+    if ((0 != ret))
+    then
+        echo "make has some thing wrong for contrib."
+        cd -
+        exit -1;
+    else
+        echo "auto compiled success for contrib!"
+    fi
+
+    cd -
+    if ((1 == argc))
+    then
+        cp ${hz2py}/hz2py ${work_path}
     fi
 
     exit 0;
@@ -123,6 +157,7 @@ if [ "build" == "$runtype" ]; then
     exit 0;
 fi
 
+# check hash value
 if [ "hash" == "$runtype" ]; then
     argc=$#
     if [ "$argc" -lt 2 ];

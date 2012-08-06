@@ -183,8 +183,6 @@ change set `format` and try again.%s", CRLF);
 
 /*
  * 处理模块
- * gw event-http.c -o http-sever -levent
- * TODO: add getopt() and gconf.
  * TODO: add lua to create JSON data.
  * TODO: add log logic.
  * TODO: add pid logic.

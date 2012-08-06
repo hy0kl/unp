@@ -5,4 +5,4 @@ install:
 	install -d  $(BIN)
 	install ./hz2py $(BIN)
 clean:
-	-rm hz2py
+	-rm -rf hz2py
