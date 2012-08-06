@@ -79,7 +79,6 @@ fi
 
 # start
 if [ "start" == "$runtype" ]; then
-    #work_pids=$(ps aux | grep spider.py | grep -v grep | awk '{print $2}' | xargs)
     get_work_pids
     if [ "$work_pids" == "" ]; then
         echo "It is no process working, so let it start to work."
