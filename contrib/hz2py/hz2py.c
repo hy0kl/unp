@@ -47,7 +47,9 @@ void hz2py(const char *line,
                 if (show_tones)
                     pinyin_get_tones_by_unicode(uni_char, &tones);
 
+                // add blank
                 if (add_blank && last_uni_char != 0 && !pinyin_ishanzi(last_uni_char)) printf(" ");
+
                 for (int i = 0; i < count; i++)
                 {
                     if (first_letter_only)
@@ -64,6 +66,7 @@ void hz2py(const char *line,
                         {
                             int has_print = 0;
                             char c = pinyins[i][0];
+
                             for (int j = 0; j < i; j ++)
                             {
                                 if (pinyins[j][0] == c)
@@ -73,12 +76,13 @@ void hz2py(const char *line,
                                 }
                             }
 
-                            if (!has_print)
+                            if (! has_print)
                             {
+                                // fprintf(stderr, "I am here, i =%d \n", i);
                                 if (print_count > 0)
                                     printf("|");
                                 printf("%c", pinyins[i][0]);
-                                print_count ++;
+                                print_count++;
                             }
                             else
                             {
