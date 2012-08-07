@@ -19,7 +19,7 @@ hz2py="${contrib_path}/hz2py"
 prime_number=9999991
 dict_number=8000
 
-Usage="$0 <runtype:start|stop|make|build|hash>"
+Usage="$0 <runtype:start|stop|make|build|hash|pretreat>"
 if [ $# -lt 1 ];
 then
     echo "$Usage"

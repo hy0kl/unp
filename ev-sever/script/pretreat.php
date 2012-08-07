@@ -3,6 +3,8 @@ define('ABS_PATH', dirname(__FILE__));
 include_once(ABS_PATH . '/config.php');
 
 define('CONVERT_BIN', './hz2py');
+define('MULTI_TONE',  '|');
+define('MULTI_SEPARATOR', ' ');
 
 if (! ($argc > 2))
 {
@@ -51,23 +53,23 @@ while (! feof($r_fp))
     $spelling = '';         // 全拼
     $simple_short = '';     // 简拼
 
-    $cmd = sprintf("echo \"%s\" | %s -B -d", $original, CONVERT_BIN);
+    $cmd = sprintf("echo \"%s\" | %s ", $original, CONVERT_BIN);
     // echo $cmd; exit();
     $cli_ret = exec($cmd, $output);
     $spelling = $cli_ret;
     $output = null;
 
-    $cmd = sprintf("echo \"%s\" | %s -B -d -f", $original, CONVERT_BIN);
+    $cmd = sprintf("echo \"%s\" | %s -f", $original, CONVERT_BIN);
     //echo $cmd; exit();
     $cli_ret = exec($cmd, $output);
     $simple_short = $cli_ret;
     $output = null;
 
     //echo "{$original} {$spelling} {$simple_short}\n";
-    $exp_data[0] = $spelling;
+    $exp_data[0] = get_multiple_tone($spelling);
     write_log($w_fp, $exp_data);
 
-    $exp_data[0] = $simple_short;
+    $exp_data[0] = get_multiple_tone($simple_short);
     write_log($w_fp, $exp_data);
 }
 
@@ -78,4 +80,20 @@ function write_log(&$fp, &$log_array)
 {
     $log = implode("\t", $log_array);
     fwrite($fp, $log, strlen($log));
+}
+
+function get_multiple_tone($str)
+{
+    $sub_exp = explode(MULTI_SEPARATOR, $str);
+    foreach ($sub_exp as $key => $value)
+    {
+        if (false !== strpos($value, MULTI_TONE))
+        {
+            $multi_exp = explode(MULTI_TONE, $value);
+            $sub_exp[$key] = $multi_exp[0];
+        }
+    }
+
+    $str = implode('', $sub_exp);
+    return $str;
 }
