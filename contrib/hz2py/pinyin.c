@@ -52,10 +52,11 @@ int pinyin_get_pinyins_by_unicode(wchar_t uni, const char ***pinyins_out)
         return 0;
     }
 
-    /**
+    /*
     fprintf(stderr, "wchar_t uni: %u\n", uni);
     fprintf(stderr, "%s: count: %d\n", __func__, count);
     */
+
     const char *indexs = pinyin_index[uni - 19968];
     const char **pinyins = (const char **)malloc(sizeof(const char *) * count);
     for (int i = 0; i < count; i++)
