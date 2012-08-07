@@ -4,8 +4,13 @@
 abs_path="$HOME/Study/unp"
 ### !!! ###
 
+# global vars
+#start_time=$(date +"%Y-%m-%d:%H:%M:%S")
+time_str=$(date +"%Y-%m-%d")
 work_path="${abs_path}/ev-sever"
 contrib_path="${abs_path}/contrib"
+data_path="${work_path}/data"
+script="${work_path}/script"
 
 hz2py="${contrib_path}/hz2py"
 
@@ -24,7 +29,8 @@ runtype=$1
 
 if [ "$runtype" != "start" ] && [ "$runtype" != "stop" ] &&
     [ "parse" != "$runtype" ] && [ "build" != "$runtype" ] &&
-    [ "make" != "$runtype" ] && [ "hash" != "$runtype" ];
+    [ "make" != "$runtype" ] && [ "hash" != "$runtype" ] &&
+    [ "pretreat" != "$runtype" ];
 then
     echo "$Usage"
     exit 1
@@ -46,7 +52,7 @@ function create_data()
 {
     # create inverted index data and dict data
     number=$1
-    php script/create_index.php $number
+    php "$script/create_index.php" $number
     ret=$?
     if ((0 != ret))
     then
@@ -165,6 +171,7 @@ if [ "hash" == "$runtype" ]; then
         echo "Usage: $0 hash <query-word>"
         exit -1
     fi
+
     query_word=$2
     "$work_path/hash" "$query_word" "$prime_number"
     echo ""
@@ -172,3 +179,28 @@ if [ "hash" == "$runtype" ]; then
     exit 0;
 fi
 
+#pretreat original
+if [ "pretreat" == "$runtype" ]; then
+    echo "It do work for pretreatment original."
+
+    tool_hz2py=$work_path/hz2py
+    if [ ! -f "$tool_hz2py" ]; then
+        echo "NO tools: ${tool_hz2py}"
+        exit -1;
+    fi
+
+    src_file="${data_path}/original"
+    pre_file="${data_path}/pre_orig"
+    src_backup="${src_file}.${time_str}"
+
+    : > $pre_file;
+    cp "$src_file" "$src_backup"
+    php "$script/pretreat.php" "$src_file" "$pre_file"
+
+    ret=$?
+    if ((0 == ret))
+    then
+        cp "$pre_file" "${pre_file}.${time_str}"
+        cat "$pre_file" >> "$src_file"
+    fi
+fi
