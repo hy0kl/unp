@@ -1,6 +1,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 #include "event-http.h"
+
 /**
  * get localtime string.
  * */
@@ -26,6 +27,18 @@ indext_t hash(const char *key, const int hash_table_size);
 char * str_replace(char *src, const size_t buf_size, const char *search, const char *replace);
 
 char *strtolower(char *src, const size_t buf_len, const char *encoding);
+
+int url_encode(char *str, int ext);
+
+/**
+ * ret: 实际截取的字符个数
+ * */
+int cut_str(const char *src,
+            char *des,
+            const size_t des_buf_len,
+            const char *charset,
+            unsigned int length,
+            const char *suffix);
 
 #endif
 

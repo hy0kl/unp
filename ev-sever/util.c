@@ -275,3 +275,162 @@ char *strtolower(char *src, const size_t buf_len, const char *encoding)
     return src;
 }
 
+int cut_str(const char *src,
+            char *des,
+            const size_t des_buf_len,
+            const char *charset,
+            unsigned int length,
+            const char *suffix)
+{
+    int ret = 0;
+    unsigned int suffix_len = strlen(suffix);
+    unsigned int str_len    = strlen(src);
+
+    unsigned int t  = 0;
+    unsigned int n  = 0;
+    unsigned int tn = 0;
+
+    if (NULL == src || NULL == des || length <= 0 || str_len >= des_buf_len)
+    {
+        des[0] = '\0';
+        ret = -11;
+        goto FINISH;
+    }
+
+    if (str_len <= length && str_len < des_buf_len)
+    {
+        memmove(des, src, str_len);
+        des[des_buf_len - 1] = '\0';
+
+        goto FINISH;
+    }
+
+    length -= suffix_len;
+    if (0 == strncmp(charset, "utf-8", 5))
+    {
+        while (n < length)
+        {
+            t = (unsigned char)src[n];
+            if (t == 9 || t == 10 || (32 <= t && t <= 126))
+            {
+                tn = 1;
+                n++;
+            }
+            else if (194 <= t && t <= 223)
+            {
+                tn = 2;
+                n   += 2;
+            }
+            else if (224 <= t && t <= 239)
+            {
+                tn = 3;
+                n   += 3;
+            }
+            else if (240 <= t && t <= 247)
+            {
+                tn = 4;
+                n   += 4;
+            }
+            else if (248 <= t && t <= 251)
+            {
+                tn = 5;
+                n   += 5;
+            }
+            else if (t == 252 || t == 253)
+            {
+                tn = 6;
+                n   += 6;
+            } else
+            {
+                n++;
+            }
+
+            if (n >= length)
+            {
+                break;
+            }
+
+        }
+
+        if (n > length)
+        {
+            n -= tn;
+        }
+
+        for (t = 0; t < n; t++)
+        {
+            des[t] = src[t];
+        }
+    }
+    else
+    {
+        for (n = 0; n < length - 1; n++)
+        {
+            des[n] = src[n];
+            t = (unsigned char)src[n];
+            if (t  > 127)
+            {
+                n++;
+                des[n] = src[n];
+            }
+        }
+
+    }
+    ret = n;
+
+    strncat(des, suffix, des_buf_len - strlen(des) - 1);
+    des[des_buf_len - 1] = '\0';
+
+FINISH:
+    return ret;
+}
+
+static unsigned char to_hex(unsigned char code)
+{
+    static unsigned char hex[] = "0123456789ABCDEF";
+    return hex[code & 15];
+}
+
+int url_encode(char *str, int ext)
+{
+    int ret = 0;
+    unsigned char *pstr = (unsigned char *)str;
+    unsigned char  buf[DEFAULT_LINK_LENGTH] = {0};
+    unsigned char *pbuf = buf;
+
+    if (NULL == str)
+    {
+        ret = -1;
+        goto FINISH;
+    }
+
+    while (*pstr && (pbuf - buf + 4) < DEFAULT_LINK_LENGTH)
+    {
+        /* Allow only alphanumeric chars and '_', '-', '.'; escape the rest */
+        /** Come from php source code. */
+        if (isalnum(*pstr) || NULL != strchr("_-.~", *pstr)
+            || (ext && NULL != strchr("%?&=/:", *pstr)))
+        {
+            *pbuf++ = *pstr;
+        }
+        else if (*pstr == ' ')
+        {
+            *pbuf++ = '+';
+        }
+        else
+        {
+            *pbuf++ = '%';
+            *pbuf++ = to_hex(*pstr >> 4);
+            *pbuf++ = to_hex(*pstr & 15);
+        }
+
+        pstr++;
+    }
+    *pbuf = '\0';
+
+    snprintf(str, DEFAULT_LINK_LENGTH, "%s", buf);
+
+FINISH:
+    return ret;
+}
+

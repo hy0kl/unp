@@ -12,12 +12,15 @@ GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 
 TARGET = sug-server
 TOOL   = hash
+BUILD  = build
+
 CONTRIB= hz2py
 
 OBJS1  = event-http.o util.o
 OBJS2  = hash.o util.o
+OBJS3  = build.o util.o
 
-all : $(TARGET) $(TOOL)
+all : $(TARGET) $(TOOL) $(BUILD)
 	@echo "Start compile all"
 	rm -f *.o
 
@@ -29,13 +32,17 @@ $(TOOL) : $(OBJS2)
 	@echo "start compile tool"
 	$(GCC) -g -o $@ $^ $(LIBDIR)
 
+$(BUILD) : $(OBJS3)
+	@echo "start compile build"
+	$(GCC) -g -o $@ $^ $(LIBDIR)
+
 %.o : %.c
 	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) $(OBJS1) $(OBJS2) $(TOOL) $(CONTRIB)
+	rm -rf $(TARGET) $(OBJS1) $(OBJS2) $(OBJS3) $(TOOL) $(BUILD)  $(CONTRIB)
 
 .PHONY: cleanobj
 cleanobj:
-	rm -rf $(OBJS1) $(OBJS2)
+	rm -rf $(OBJS1) $(OBJS2) $(OBJS3)

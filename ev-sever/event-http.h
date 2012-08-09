@@ -9,6 +9,8 @@
 #define _DEBUG  1
 #define DAEMON  1
 
+#define DEFAULT_LINK_LENGTH 1024
+
 /**
  * #define logprintf(format, arg...) fprintf(stderr, "%s:%d:%s "format"\n", __FILE__, __LINE__, __func__, ##arg)
  */
