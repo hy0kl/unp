@@ -165,6 +165,7 @@ static void parse_task()
         }
 
         write(pipe_fp[PIPE_WRITER], &task, sizeof(task_queue_t));
+        usleep((useconds_t)(5000));
     }
 
     task.dict_id = 0;
@@ -181,6 +182,18 @@ static void handle_task()
 {
     task_queue_t task;
 
+    if (0 != init_hash_table())
+    {
+        fprintf(stderr, "init_hash_table fail.\n");
+        exit(-1);
+    }
+#if (_DEBUG)
+    else
+    {
+        logprintf("init hash table success.");
+    }
+#endif
+
     close(pipe_fp[PIPE_WRITER]);
     while (1)
     {
@@ -193,8 +206,6 @@ static void handle_task()
             break;
         }
         logprintf("recv data: [%s]", task.original_line);
-
-        usleep((useconds_t)(5000));
     }
 
     return;
@@ -275,18 +286,6 @@ int main(int argc, char *argv[])
     logprintf("inverted index file: [%s]", gconfig.inverted_index);
     logprintf("index dict file: [%s]", gconfig.index_dict);
     logprintf("hash_table_size: %lu", gconfig.max_hash_table_size);
-#endif
-
-    if (0 != init_hash_table())
-    {
-        fprintf(stderr, "init_hash_table fail.\n");
-        exit(-1);
-    }
-#if (_DEBUG)
-    else
-    {
-        logprintf("init hash table success.");
-    }
 #endif
 
     /** init pipe */
