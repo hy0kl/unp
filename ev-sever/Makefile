@@ -5,6 +5,10 @@
 # 用 @ 字符在命令行前,此命令将不被 make 显示出来
 # 在 Makefile 的命令行前加一个减号 - (在 Tab 键之后),标记为不管命令出不出错都认为是成功的
 
+CONTRIB_PATH = ../contrib/hz2py
+
+INCLUDEDIR = \
+		-I$(CONTRIB_PATH)
 LIBDIR = -levent
 
 GCC = gcc
@@ -13,8 +17,6 @@ GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
 TARGET = sug-server
 TOOL   = hash
 BUILD  = build
-
-CONTRIB= hz2py
 
 OBJS1  = event-http.o util.o
 OBJS2  = hash.o util.o
@@ -37,11 +39,11 @@ $(BUILD) : $(OBJS3)
 	$(GCC) -g -o $@ $^ $(LIBDIR)
 
 %.o : %.c
-	$(GCC) $(GCCFLAGS) -c $< -o $@
+	$(GCC) $(GCCFLAGS) -c $< -o $@ $(INCLUDEDIR)
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) $(OBJS1) $(OBJS2) $(OBJS3) $(TOOL) $(BUILD)  $(CONTRIB)
+	rm -rf $(TARGET) $(OBJS1) $(OBJS2) $(OBJS3) $(TOOL) $(BUILD)
 
 .PHONY: cleanobj
 cleanobj:

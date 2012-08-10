@@ -119,28 +119,28 @@ if [ "make" == "$runtype" ]; then
         echo "auto compiled success!"
     fi
 
-    if ((argc > 1))
-    then
-        cd ${hz2py} && make $2
-    else
-        cd ${hz2py} && make
-    fi
+    #if ((argc > 1))
+    #then
+    #    cd ${hz2py} && make $2
+    #else
+    #    cd ${hz2py} && make
+    #fi
 
-    ret=$?
-    if ((0 != ret))
-    then
-        echo "make has some thing wrong for contrib."
-        cd -
-        exit -1;
-    else
-        echo "auto compiled success for contrib!"
-    fi
+    #ret=$?
+    #if ((0 != ret))
+    #then
+    #    echo "make has some thing wrong for contrib."
+    #    cd -
+    #    exit -1;
+    #else
+    #    echo "auto compiled success for contrib!"
+    #fi
 
-    cd -
-    if ((1 == argc))
-    then
-        cp ${hz2py}/hz2py ${work_path}
-    fi
+    #cd -
+    #if ((1 == argc))
+    #then
+    #    cp ${hz2py}/hz2py ${work_path}
+    #fi
 
     exit 0;
 fi

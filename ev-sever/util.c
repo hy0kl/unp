@@ -279,16 +279,18 @@ int cut_str(const char *src,
             char *des,
             const size_t des_buf_len,
             const char *charset,
-            unsigned int length,
+            unsigned int length,    /** 宽字符串的字数 */
             const char *suffix)
 {
     int ret = 0;
     unsigned int suffix_len = strlen(suffix);
     unsigned int str_len    = strlen(src);
 
-    unsigned int t  = 0;
-    unsigned int n  = 0;
-    unsigned int tn = 0;
+    unsigned int wchar_count = 0;
+    unsigned int cut_count = 0;
+    unsigned char t = 0;
+
+    int tn = 0;
 
     if (NULL == src || NULL == des || length <= 0 || str_len >= des_buf_len)
     {
@@ -308,75 +310,66 @@ int cut_str(const char *src,
     length -= suffix_len;
     if (0 == strncmp(charset, "utf-8", 5))
     {
-        while (n < length)
+        cut_count = 0;
+        //logprintf("src str: [%s]", src);
+        while (wchar_count < length && cut_count < des_buf_len - suffix_len 
+                && cut_count < str_len)
         {
-            t = (unsigned char)src[n];
+            t = (unsigned char)src[cut_count];
             if (t == 9 || t == 10 || (32 <= t && t <= 126))
             {
                 tn = 1;
-                n++;
             }
             else if (194 <= t && t <= 223)
             {
                 tn = 2;
-                n   += 2;
             }
             else if (224 <= t && t <= 239)
             {
                 tn = 3;
-                n   += 3;
             }
             else if (240 <= t && t <= 247)
             {
                 tn = 4;
-                n   += 4;
             }
             else if (248 <= t && t <= 251)
             {
                 tn = 5;
-                n   += 5;
             }
             else if (t == 252 || t == 253)
             {
                 tn = 6;
-                n   += 6;
             } else
             {
-                n++;
+                tn = 1;
             }
 
-            if (n >= length)
-            {
-                break;
-            }
-
+            wchar_count++;
+            cut_count += tn;
         }
 
-        if (n > length)
+        //logprintf("cut_count: %d", cut_count);
+        for (tn = 0; tn < cut_count; tn++)
         {
-            n -= tn;
+            des[tn] = src[tn];
         }
-
-        for (t = 0; t < n; t++)
-        {
-            des[t] = src[t];
-        }
+        //logprintf("after des: %s", des);
     }
     else
     {
-        for (n = 0; n < length - 1; n++)
+        for (tn = 0; tn < length - 1; tn++)
         {
-            des[n] = src[n];
-            t = (unsigned char)src[n];
+            des[tn] = src[tn];
+            t = (unsigned char)src[tn];
             if (t  > 127)
             {
-                n++;
-                des[n] = src[n];
+                tn++;
+                des[tn] = src[tn];
             }
         }
 
     }
-    ret = n;
+    ret = cut_count;
 
     strncat(des, suffix, des_buf_len - strlen(des) - 1);
     des[des_buf_len - 1] = '\0';
