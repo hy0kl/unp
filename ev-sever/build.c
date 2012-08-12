@@ -183,6 +183,14 @@ FINISH:
     return;
 }
 
+static int weight_cmp(const void *a, const void *b)
+{
+    weight_item_t *aa = (weight_item_t *)a;
+    weight_item_t *bb = (weight_item_t *)b;
+
+    return bb->weight - aa->weight;
+}
+
 static void handle_task()
 {
     int i = 0;
@@ -395,8 +403,24 @@ static void handle_task()
                 }
             }
 
+            /** 写倒排表 */
             logprintf("[%s] hash_key: %lu, dict_id: %lu, weight:%f",
                 task.prefix_array.data[i], hash_key, task.dict_id, weight);
+            p = log_buf;
+            p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%s\t%lu\t",
+              task.prefix_array.data[i], hash_key);
+
+            qsort(weight_array.weight_item, weight_array.count, sizeof(weight_item_t), weight_cmp);
+            for (k = 0; k < weight_array.count; k++)
+            {
+                p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%lu,",
+                    weight_array.weight_item[k].dict_id);
+            }
+
+            p += snprintf(p, sizeof(log_buf) - (p - log_buf), "\n");
+            size = fwrite(log_buf, sizeof(char), p - log_buf, inverted_fp);
+
+            /** 记录已经处理过的到 hash 表中 */
 
             fclose(orig_fp);
         } /** for every prefix */
