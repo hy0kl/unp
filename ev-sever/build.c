@@ -138,7 +138,7 @@ static void parse_task()
             *p = '\0';
         }
         //logprintf("every line: [%s]", line_buf);
-        k = task.prefix_array.count;
+        k = task.prefix_array.count = 0;
         for (i = 1; i <= MB_LENGTH && k < PREFIX_ARRAY_SIZE; i++)
         {
             /** Cleared buffer */
@@ -155,6 +155,11 @@ static void parse_task()
             snprintf(task.prefix_array.data[k], PREFIX_LEN, "%s", prefix);
             task.prefix_array.count++;
             logprintf("every prefix: [%s]", prefix);
+
+            if (result >= strlen(line_buf))
+            {
+                break;
+            }
         }
 
         /** 全拼和简拼 */
@@ -181,6 +186,7 @@ FINISH:
 static void handle_task()
 {
     int i = 0;
+    int k = 0;
     task_queue_t task;
     indext_t     hash_key = 0;
     indext_t     dict_id  = 0;
@@ -192,12 +198,20 @@ static void handle_task()
     int hash_exist = 0;
     hash_list_t *hash_item     = NULL;
     hash_list_t *tmp_hash_item = NULL;
+    weight_array_t weight_array;
     char tmp_buf[ORIGINAL_LINE_LEN];
+    char line_buf[ORIGINAL_LINE_LEN];
     char log_buf[LOG_BUF_LEN];
     char *p = NULL;
+    char *find = NULL;
     size_t size = 0;
 
-    weight_array_t weight_array;
+    size_t prefix_len = 0;
+    int prefix_match  = 0;
+    int count = 0;
+    float weight = 0.0;
+
+    indext_t task_id = 0;
 
     inverted_fp = fopen(gconfig.inverted_index, "w");
     if (NULL == inverted_fp)
@@ -232,7 +246,6 @@ static void handle_task()
     {
         hash_exist = 0;
 
-        memset(&weight_array, 0, sizeof(weight_array_t));
         memset(&task, 0, sizeof(task_queue_t));
         read(pipe_fp[PIPE_READER], &task, sizeof(task_queue_t));
 
@@ -245,6 +258,14 @@ static void handle_task()
         logprintf("get handle task id: [%lu]", task.dict_id);
         logprintf("recv data: [%s]", task.original_line);
 #endif
+        if (task_id == task.dict_id)
+        {
+            logprintf("Get same task.");
+            usleep((useconds_t)5000);
+            continue;
+        }
+        task_id = task.dict_id;
+
         /** handle every prefix */
         snprintf(tmp_buf, sizeof(tmp_buf), "%s", task.original_line);
         if (NULL != (p = strstr(tmp_buf, SEPARATOR)))
@@ -252,6 +273,7 @@ static void handle_task()
             *p = '\0';
         }
         strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
+        logprintf("task.prefix_array.count = %d", task.prefix_array.count);
         for (i = 0; i < task.prefix_array.count; i++)
         {
             hash_key = hash(task.prefix_array.data[i], gconfig.max_hash_table_size);
@@ -302,14 +324,81 @@ static void handle_task()
                 hash_item->next = tmp_hash_item;
                 hash_item = tmp_hash_item;
             }
+
             /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
             if (hash_exist)
             {
                 continue;
             }
 
+            orig_fp = fopen(g_original_file, "r");
+            if (! orig_fp)
+            {
+                fprintf(stderr, "Can open original file: [%s]\n", g_original_file);
+                goto FATAL_ERROR;
+            }
+
+            /** 扫描整个输入词表,建立索引 */
+            dict_id = 0;
+            memset(&weight_array, 0, sizeof(weight_array_t));
+            while (! feof(orig_fp))
+            {
+                if ((NULL == fgets(line_buf, ORIGINAL_LINE_LEN - 1, orig_fp)) ||
+                        '#' == line_buf[0])
+                {
+                    continue;
+                }
+
+                line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
+                // logprintf("every line: [%s]", line_buf);
+                /** tmp_buf 可以安全复用 */
+                snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
+                if (NULL != (p = strstr(tmp_buf, SEPARATOR)))
+                {
+                    *p = '\0';
+                }
+                strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
+
+                dict_id++;
+                p = task.prefix_array.data[i];
+                prefix_len   = strlen(p);
+                prefix_match = 0;
+                for (k = 0; k < prefix_len; k++)
+                {
+                    if(p[k] == tmp_buf[k])
+                        prefix_match++;
+                    else
+                        break;
+                }
+
+                if (! prefix_match || prefix_match != prefix_len)
+                {
+                    continue;
+                }
+
+                p++;
+                if (NULL != (find = strstr(p, SEPARATOR)))
+                {
+                    *find = '\0';
+                }
+                weight = (float)atof(p);
+
+                count = weight_array.count;
+                if(count < DEFAULT_WEIGHT_ARRAY_SIZE)
+                {
+                    weight_array.weight_item[count].dict_id = dict_id;
+                    weight_array.weight_item[count].weight  = weight;
+                    weight_array.count++;
+                }
+            }
+
+            logprintf("[%s] hash_key: %lu, dict_id: %lu, weight:%f",
+                task.prefix_array.data[i], hash_key, task.dict_id, weight);
+
+            fclose(orig_fp);
         } /** for every prefix */
 
+        /** writ [index_dict] file */
         snprintf(log_buf, sizeof(log_buf), "%lu\t%s", task.dict_id, task.original_line);
         size = fwrite(log_buf, sizeof(char), strlen(log_buf), dict_fp);
     } /** big loop */
