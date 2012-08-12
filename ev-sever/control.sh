@@ -148,7 +148,9 @@ fi
 # build data
 if [ "build" == "$runtype" ]; then
     echo "build index and dict data"
-    create_data $prime_number
+    #create_data $prime_number
+    cp "$data_path/original" "$data_path/original.$time_str"
+    #$work_path/build -s $prime_number -a $dict_number
 
     ret=$?
     if ((0 != ret))
@@ -158,6 +160,9 @@ if [ "build" == "$runtype" ]; then
     else
         echo "build success!"
     fi
+
+    cp "$data_path/index_dict" "$data_path/index_dict.$time_str"
+    cp "$data_path/inverted_index" "$data_path/inverted_index.$time_str"
 
     exit 0;
 fi
