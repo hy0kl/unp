@@ -415,12 +415,18 @@ static void handle_task()
             {
                 p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%lu,",
                     weight_array.weight_item[k].dict_id);
+
+                /** 记录已经处理过的到 hash 表中 */
+                if (k < SINGLE_INDEX_SIZE)
+                {
+                    hash_item->index_item->index_chain[k] = weight_array.weight_item[k].dict_id;
+                    hash_item->index_item->size = k;
+                }
             }
 
             p += snprintf(p, sizeof(log_buf) - (p - log_buf), "\n");
             size = fwrite(log_buf, sizeof(char), p - log_buf, inverted_fp);
 
-            /** 记录已经处理过的到 hash 表中 */
 
             fclose(orig_fp);
         } /** for every prefix */
