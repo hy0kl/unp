@@ -26,6 +26,7 @@
 #define PREFIX_LEN          64
 #define ORIGINAL_LINE_LEN   2048
 #define DEFAULT_WEIGHT_ARRAY_SIZE   256
+#define LOG_BUF_LEN         1024 * 3
 
 typedef struct _prefix_array_t
 {
@@ -47,5 +48,11 @@ typedef struct _weight_item_t
     indext_t dict_id;
     float    weight;
 } weight_item_t;
+
+typedef struct _weight_array_t
+{
+    short count;
+    weight_item_t weight_item[DEFAULT_WEIGHT_ARRAY_SIZE];
+} weight_array_t;
 
 #endif

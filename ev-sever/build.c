@@ -180,12 +180,45 @@ FINISH:
 
 static void handle_task()
 {
+    int i = 0;
     task_queue_t task;
+    indext_t     hash_key = 0;
+    indext_t     dict_id  = 0;
+
+    FILE *orig_fp     = NULL;
+    FILE *inverted_fp = NULL;   // inverted table
+    FILE *dict_fp     = NULL;
+
+    int hash_exist = 0;
+    hash_list_t *hash_item     = NULL;
+    hash_list_t *tmp_hash_item = NULL;
+    char tmp_buf[ORIGINAL_LINE_LEN];
+    char log_buf[LOG_BUF_LEN];
+    char *p = NULL;
+    size_t size = 0;
+
+    weight_array_t weight_array;
+
+    inverted_fp = fopen(gconfig.inverted_index, "w");
+    if (NULL == inverted_fp)
+    {
+        fprintf(stderr, "Can NOT open inverted index file to write data: [%s]\n",
+            gconfig.inverted_index);
+        exit(-9);
+    }
+
+    dict_fp = fopen(gconfig.index_dict, "w");
+    if (NULL == dict_fp)
+    {
+        fprintf(stderr, "Can NOT open dict file to write data: [%s]\n",
+            gconfig.index_dict);
+        exit(-10);
+    }
 
     if (0 != init_hash_table())
     {
         fprintf(stderr, "init_hash_table fail.\n");
-        exit(-1);
+        exit(-11);
     }
 #if (_DEBUG)
     else
@@ -197,6 +230,9 @@ static void handle_task()
     close(pipe_fp[PIPE_WRITER]);
     while (1)
     {
+        hash_exist = 0;
+
+        memset(&weight_array, 0, sizeof(weight_array_t));
         memset(&task, 0, sizeof(task_queue_t));
         read(pipe_fp[PIPE_READER], &task, sizeof(task_queue_t));
 
@@ -205,10 +241,86 @@ static void handle_task()
             fprintf(stderr, "handle process completed.\n");
             break;
         }
+#if (_DEBUG)
+        logprintf("get handle task id: [%lu]", task.dict_id);
         logprintf("recv data: [%s]", task.original_line);
-    }
+#endif
+        /** handle every prefix */
+        snprintf(tmp_buf, sizeof(tmp_buf), "%s", task.original_line);
+        if (NULL != (p = strstr(tmp_buf, SEPARATOR)))
+        {
+            *p = '\0';
+        }
+        strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
+        for (i = 0; i < task.prefix_array.count; i++)
+        {
+            hash_key = hash(task.prefix_array.data[i], gconfig.max_hash_table_size);
+            if (hash_key < 0)
+            {
+                fprintf(stderr, "hash('%s') error.\n", task.prefix_array.data[i]);
+                break;
+            }
+
+            hash_item = &(index_hash_table[hash_key]);
+            while (hash_item->index_item->size > 0)
+            {
+                if ((u_char)tmp_buf[0] == (u_char)task.prefix_array.data[i][0])
+                {
+                    hash_exist = 1;
+                    break;
+                }
+
+                size = sizeof(hash_list_t);
+                tmp_hash_item = (hash_list_t *)malloc(size);
+                if (NULL == tmp_hash_item)
+                {
+                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item, need size: %ld\n",
+                        size);
+                    goto FATAL_ERROR;
+                }
+                tmp_hash_item->next = NULL;
+
+                size = sizeof(index_item_t);
+                tmp_hash_item->index_item = (index_item_t *)malloc(size);
+                if (NULL == tmp_hash_item->index_item)
+                {
+                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item, need size: %ld\n",
+                        size);
+                    goto FATAL_ERROR;
+                }
+                tmp_hash_item->index_item->size = 0;
+
+                size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
+                tmp_hash_item->index_item->index_chain = (indext_t *)malloc(size);
+                if (NULL == tmp_hash_item->index_item->index_chain)
+                {
+                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item->index_chain, need size: %ld\n",
+                        size);
+                    goto FATAL_ERROR;
+                }
+
+                hash_item->next = tmp_hash_item;
+                hash_item = tmp_hash_item;
+            }
+            /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
+            if (hash_exist)
+            {
+                continue;
+            }
+
+        } /** for every prefix */
+
+        snprintf(log_buf, sizeof(log_buf), "%lu\t%s", task.dict_id, task.original_line);
+        size = fwrite(log_buf, sizeof(char), strlen(log_buf), dict_fp);
+    } /** big loop */
+
+    fclose(dict_fp);
+    fclose(inverted_fp);
 
     return;
+
+FATAL_ERROR:
+    exit(111);
 }
 
 int main(int argc, char *argv[])
