@@ -353,9 +353,11 @@ static void handle_task()
                 // logprintf("every line: [%s]", line_buf);
                 /** tmp_buf 可以安全复用 */
                 snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
+                find = tmp_buf;
                 if (NULL != (p = strstr(tmp_buf, SEPARATOR)))
                 {
                     *p = '\0';
+                    find = p + 1;
                 }
                 strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
 
@@ -376,11 +378,12 @@ static void handle_task()
                     continue;
                 }
 
-                p++;
+                p = find;
                 if (NULL != (find = strstr(p, SEPARATOR)))
                 {
                     *find = '\0';
                 }
+                // logprintf("weight str: %s", p);
                 weight = (float)atof(p);
 
                 count = weight_array.count;
