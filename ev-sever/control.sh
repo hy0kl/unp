@@ -150,7 +150,7 @@ if [ "build" == "$runtype" ]; then
     echo "build index and dict data"
     #create_data $prime_number
     cp "$data_path/original" "$data_path/original.$time_str"
-    #$work_path/build -s $prime_number -a $dict_number
+    $work_path/build -s $prime_number
 
     ret=$?
     if ((0 != ret))
