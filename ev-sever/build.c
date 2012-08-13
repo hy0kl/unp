@@ -7,6 +7,7 @@
 config_t      gconfig;
 
 hash_list_ext_t  *hash_table  = NULL;
+orig_list_t      *orig_list   = NULL;
 
 indext_t  g_dict_id = 0;
 char      g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
@@ -77,7 +78,7 @@ static int init_hash_table()
             ret = -1;
             goto FINISH;
         }
-
+        hash_table[i].prefix[0] = '\0';
     }
 
 FINISH:
@@ -116,6 +117,8 @@ static void parse_task()
 
     indext_t dict_id   = 0;
     task_queue_t task;
+
+    //sleep(5);
 
     fp = fopen(g_original_file, "r");
     if (! fp)
@@ -195,6 +198,74 @@ FINISH:
     return;
 }
 
+static int load_original()
+{
+    int ret = 0;
+    char line_buf[ORIGINAL_LINE_LEN];
+    FILE *orig_fp     = NULL;
+    size_t size = 0;
+
+    orig_list_t *tmp_orig_list = NULL;
+    orig_list_t *orig_list_curr= NULL;
+
+    orig_fp = fopen(g_original_file, "r");
+    if (! orig_fp)
+    {
+        fprintf(stderr, "Can open original file: [%s]\n", g_original_file);
+        ret = 11;
+        goto FINISH;
+    }
+
+    while (! feof(orig_fp))
+    {
+        memset(line_buf, 0, ORIGINAL_LINE_LEN);
+        if ((NULL == fgets(line_buf, ORIGINAL_LINE_LEN - 1, orig_fp)) ||
+                '#' == line_buf[0])
+        {
+            continue;
+        }
+
+        line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
+
+        size = sizeof(orig_list_t);
+        tmp_orig_list = (orig_list_t *)malloc(size);
+        if (NULL == tmp_orig_list)
+        {
+            fprintf(stderr, "Can NOT malloc memory for tmp_orig_list, need size: %ld\n", size);
+            ret = -1;
+            goto FINISH;
+        }
+
+        size = strlen(line_buf) + 1;
+        tmp_orig_list->orig_line = (char *)malloc(size);
+        if (NULL == tmp_orig_list->orig_line)
+        {
+            fprintf(stderr, "Can NOT malloc memory for tmp_orig_list->orig_line, need size: %ld\n", size);
+            ret = -1;
+            goto FINISH;
+        }
+
+        tmp_orig_list->next = NULL;
+        snprintf(tmp_orig_list->orig_line, size, "%s", line_buf);
+
+        if (NULL == orig_list)
+        {
+            orig_list      = tmp_orig_list;
+            orig_list_curr = tmp_orig_list;
+        }
+        else
+        {
+            orig_list_curr->next = tmp_orig_list;
+            orig_list_curr = tmp_orig_list;
+        }
+    }
+
+    fclose(orig_fp);
+
+FINISH:
+    return ret;
+}
+
 static int weight_cmp(const void *a, const void *b)
 {
     weight_item_t *aa = (weight_item_t *)a;
@@ -207,18 +278,20 @@ static void handle_task()
 {
     int i = 0;
     int k = 0;
-    task_queue_t task;
-    indext_t     hash_key = 0;
-    indext_t     dict_id  = 0;
+    int hash_exist = 0;
 
-    FILE *orig_fp     = NULL;
     FILE *inverted_fp = NULL;   // inverted table
     FILE *dict_fp     = NULL;
 
-    int hash_exist = 0;
+    task_queue_t task;
+    indext_t     hash_key = 0;
+    indext_t     dict_id  = 0;
     hash_list_ext_t *hash_item     = NULL;
     hash_list_ext_t *tmp_hash_item = NULL;
+    orig_list_t     *tmp_orig_list = NULL;
     weight_array_t weight_array;
+    indext_t task_id = 0;
+
     char tmp_buf[ORIGINAL_LINE_LEN];
     char line_buf[ORIGINAL_LINE_LEN];
     char log_buf[LOG_BUF_LEN];
@@ -230,8 +303,6 @@ static void handle_task()
     int prefix_match  = 0;
     int count = 0;
     float weight = 0.0;
-
-    indext_t task_id = 0;
 
     inverted_fp = fopen(gconfig.inverted_index, "w");
     if (NULL == inverted_fp)
@@ -261,6 +332,18 @@ static void handle_task()
     }
 #endif
 
+    if (0 != load_original())
+    {
+        fprintf(stderr, "load original fail.\n");
+        exit(-12);
+    }
+#if (_DEBUG)
+    else
+    {
+        logprintf("load original data success.");
+    }
+#endif
+
     close(pipe_fp[PIPE_WRITER]);
     while (1)
     {
@@ -285,12 +368,6 @@ static void handle_task()
         task_id = task.dict_id;
 
         /** handle every prefix */
-        snprintf(tmp_buf, sizeof(tmp_buf), "%s", task.original_line);
-        if (NULL != (p = strstr(tmp_buf, SEPARATOR)))
-        {
-            *p = '\0';
-        }
-        strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
         logprintf("task.prefix_array.count = %d", task.prefix_array.count);
         for (i = 0; i < task.prefix_array.count; i++)
         {
@@ -306,9 +383,12 @@ static void handle_task()
             hash_item = &(hash_table[hash_key]);
             while (hash_item && hash_item->prefix[0])
             {
+                logprintf("hash_item->prefix:[%s] CMP task.prefix_array.data[%d] : %s",
+                    hash_item->prefix, i, task.prefix_array.data[i]);
                 if ((u_char)hash_item->prefix[0] == (u_char)task.prefix_array.data[i][0])
                 {
                     hash_exist = 1;
+                    logprintf("find exist prefix: [%s]", task.prefix_array.data[i]);
                     break;
                 }
                 hash_item = hash_item->next;
@@ -336,37 +416,26 @@ static void handle_task()
 
                 hash_item->next = tmp_hash_item;
                 hash_item = tmp_hash_item;
-
-                /** 记录已经处理过的到 hash 表中 */
-                snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
             }
+            /** 记录已经处理过的到 hash 表中 */
+            snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
+            logprintf("[Recond]hash_item->prefix = %s", task.prefix_array.data[i]);
             /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
             if (hash_exist)
             {
+                //logprintf("multiple: [%s]", task.prefix_array.data[i]);
                 continue;
             }
             /** end of 去重 }*/
 
-            orig_fp = fopen(g_original_file, "r");
-            if (! orig_fp)
-            {
-                fprintf(stderr, "Can open original file: [%s]\n", g_original_file);
-                goto FATAL_ERROR;
-            }
-
             /** 扫描整个输入词表,建立索引 */
             dict_id = 0;
             memset(&weight_array, 0, sizeof(weight_array_t));
-            while (! feof(orig_fp))
+            tmp_orig_list = orig_list;
+            while (tmp_orig_list)
             {
-                if ((NULL == fgets(line_buf, ORIGINAL_LINE_LEN - 1, orig_fp)) ||
-                        '#' == line_buf[0])
-                {
-                    continue;
-                }
-
-                line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
-                // logprintf("every line: [%s]", line_buf);
+                snprintf(line_buf, ORIGINAL_LINE_LEN, "%s", tmp_orig_list->orig_line);
+                logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
                 /** tmp_buf 可以安全复用 */
                 snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
                 find = tmp_buf;
@@ -391,7 +460,7 @@ static void handle_task()
 
                 if (! prefix_match || prefix_match != prefix_len)
                 {
-                    continue;
+                    goto LOOP_NEXT;
                 }
 
                 p = find;
@@ -409,6 +478,9 @@ static void handle_task()
                     weight_array.weight_item[count].weight  = weight;
                     weight_array.count++;
                 }
+
+LOOP_NEXT:
+                tmp_orig_list = tmp_orig_list->next;
             }
 
             /** 写倒排表 */
@@ -428,8 +500,6 @@ static void handle_task()
 
             p += snprintf(p, sizeof(log_buf) - (p - log_buf), "\n");
             size = fwrite(log_buf, sizeof(char), p - log_buf, inverted_fp);
-
-            fclose(orig_fp);
         } /** for every prefix */
 
         /** writ [index_dict] file */

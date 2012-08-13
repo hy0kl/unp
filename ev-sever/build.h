@@ -63,4 +63,10 @@ typedef struct _hash_list_ext_t
     struct _hash_list_ext_t *next;
 } hash_list_ext_t;
 
+typedef struct _orig_list_t
+{
+    char *orig_line;
+    struct _orig_list_t *next;
+} orig_list_t;
+
 #endif
