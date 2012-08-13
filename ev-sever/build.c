@@ -118,7 +118,7 @@ static void parse_task()
     indext_t dict_id   = 0;
     task_queue_t task;
 
-    //sleep(5);
+    sleep(10);
 
     fp = fopen(g_original_file, "r");
     if (! fp)
