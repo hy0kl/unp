@@ -79,6 +79,7 @@ var suggest = {};
 var abc = function(json)
 {
     var html = [];
+    var suggestions = $('#suggestions');
     if ('200' == json.stat && json.res_num - 0 > 0)
     {
         var html = []
@@ -87,8 +88,12 @@ var abc = function(json)
             var obj = json.result[i];
             html.push('<li onClick="fill(\'' + obj.query + '\');">' + obj.query + '</li>');
         }
-        $('#suggestions').show();
+        suggestions.show();
         $('#autoSuggestionsList').html(html.join(''));
+    }
+    else
+    {
+        suggestions.hide();
     }
 }
 

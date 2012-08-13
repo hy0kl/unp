@@ -55,4 +55,12 @@ typedef struct _weight_array_t
     weight_item_t weight_item[DEFAULT_WEIGHT_ARRAY_SIZE];
 } weight_array_t;
 
+/** hash table list, hash 表拉链,解决冲突,建立索引时用来去重 */
+typedef struct _hash_list_ext_t
+{
+    // index_item_t        *index_item;
+    char                    *prefix;
+    struct _hash_list_ext_t *next;
+} hash_list_ext_t;
+
 #endif

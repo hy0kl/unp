@@ -6,7 +6,7 @@
  * */
 config_t      gconfig;
 
-hash_list_t  *index_hash_table  = NULL;
+hash_list_ext_t  *hash_table  = NULL;
 
 indext_t  g_dict_id = 0;
 char      g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
@@ -32,23 +32,24 @@ static int init_hash_table()
     size_t size = 0;
 
     /** 申请倒排表的内存空间 */
-    size = sizeof(hash_list_t) * gconfig.max_hash_table_size;
-    index_hash_table = (hash_list_t *)malloc(size);
-    if (NULL == index_hash_table)
+    size = sizeof(hash_list_ext_t) * gconfig.max_hash_table_size;
+    hash_table = (hash_list_ext_t *)malloc(size);
+    if (NULL == hash_table)
     {
         fprintf(stderr, "Can NOT malloc memory for hash table, need size: %ld\n",
             size);
         ret = -1;
         goto FINISH;
     }
-    //memset(index_hash_table, 0, gconfig.max_hash_table_size);
+    //memset(hash_table, 0, gconfig.max_hash_table_size);
     for (i = 0; i < gconfig.max_hash_table_size; i++)
     {
-        index_hash_table[i].next = NULL;
+        hash_table[i].next = NULL;
 
+        /**
         size = sizeof(index_item_t);
-        index_hash_table[i].index_item = (index_item_t *)malloc(size);
-        if (NULL == index_hash_table[i].index_item)
+        hash_table[i].index_item = (index_item_t *)malloc(size);
+        if (NULL == hash_table[i].index_item)
         {
             fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item, need size: %ld\n",
                 i, size);
@@ -57,15 +58,26 @@ static int init_hash_table()
         }
 
         size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
-        index_hash_table[i].index_item->index_chain = (indext_t *)malloc(size);
-        if (NULL == index_hash_table[i].index_item->index_chain)
+        hash_table[i].index_item->index_chain = (indext_t *)malloc(size);
+        if (NULL == hash_table[i].index_item->index_chain)
         {
             fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item->index_chain, need size: %ld\n",
                 i, size);
             ret = -1;
             goto FINISH;
         }
-        index_hash_table[i].index_item->size = 0;
+        hash_table[i].index_item->size = 0;
+        */
+        size = sizeof(char) * QUERY_LEN;
+        hash_table[i].prefix = (char *)malloc(size);
+        if (NULL == hash_table[i].prefix)
+        {
+            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].prefix, need size: %ld\n",
+                i, size);
+            ret = -1;
+            goto FINISH;
+        }
+
     }
 
 FINISH:
@@ -204,8 +216,8 @@ static void handle_task()
     FILE *dict_fp     = NULL;
 
     int hash_exist = 0;
-    hash_list_t *hash_item     = NULL;
-    hash_list_t *tmp_hash_item = NULL;
+    hash_list_ext_t *hash_item     = NULL;
+    hash_list_ext_t *tmp_hash_item = NULL;
     weight_array_t weight_array;
     char tmp_buf[ORIGINAL_LINE_LEN];
     char line_buf[ORIGINAL_LINE_LEN];
@@ -252,8 +264,6 @@ static void handle_task()
     close(pipe_fp[PIPE_WRITER]);
     while (1)
     {
-        hash_exist = 0;
-
         memset(&task, 0, sizeof(task_queue_t));
         read(pipe_fp[PIPE_READER], &task, sizeof(task_queue_t));
 
@@ -291,17 +301,22 @@ static void handle_task()
                 break;
             }
 
-            hash_item = &(index_hash_table[hash_key]);
-            while (hash_item->index_item->size > 0)
+            /** 前缀 hash 去重 { */
+            hash_exist = 0;
+            hash_item = &(hash_table[hash_key]);
+            while (hash_item && hash_item->prefix[0])
             {
-                if ((u_char)tmp_buf[0] == (u_char)task.prefix_array.data[i][0])
+                if ((u_char)hash_item->prefix[0] == (u_char)task.prefix_array.data[i][0])
                 {
                     hash_exist = 1;
                     break;
                 }
-
-                size = sizeof(hash_list_t);
-                tmp_hash_item = (hash_list_t *)malloc(size);
+                hash_item = hash_item->next;
+            }
+            if (NULL == hash_item)
+            {
+                size = sizeof(hash_list_ext_t);
+                tmp_hash_item = (hash_list_ext_t *)malloc(size);
                 if (NULL == tmp_hash_item)
                 {
                     fprintf(stderr, "Can NOT malloc memory for tmp_hash_item, need size: %ld\n",
@@ -310,34 +325,27 @@ static void handle_task()
                 }
                 tmp_hash_item->next = NULL;
 
-                size = sizeof(index_item_t);
-                tmp_hash_item->index_item = (index_item_t *)malloc(size);
-                if (NULL == tmp_hash_item->index_item)
+                size = sizeof(char) * QUERY_LEN;
+                tmp_hash_item->prefix = (char *)malloc(size);
+                if (NULL == tmp_hash_item->prefix)
                 {
-                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item, need size: %ld\n",
-                        size);
-                    goto FATAL_ERROR;
-                }
-                tmp_hash_item->index_item->size = 0;
-
-                size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
-                tmp_hash_item->index_item->index_chain = (indext_t *)malloc(size);
-                if (NULL == tmp_hash_item->index_item->index_chain)
-                {
-                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->index_item->index_chain, need size: %ld\n",
+                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->prefix, need size: %ld\n",
                         size);
                     goto FATAL_ERROR;
                 }
 
                 hash_item->next = tmp_hash_item;
                 hash_item = tmp_hash_item;
-            }
 
+                /** 记录已经处理过的到 hash 表中 */
+                snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
+            }
             /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
             if (hash_exist)
             {
                 continue;
             }
+            /** end of 去重 }*/
 
             orig_fp = fopen(g_original_file, "r");
             if (! orig_fp)
@@ -416,17 +424,10 @@ static void handle_task()
                 p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%lu,",
                     weight_array.weight_item[k].dict_id);
 
-                /** 记录已经处理过的到 hash 表中 */
-                if (k < SINGLE_INDEX_SIZE)
-                {
-                    hash_item->index_item->index_chain[k] = weight_array.weight_item[k].dict_id;
-                    hash_item->index_item->size = k;
-                }
             }
 
             p += snprintf(p, sizeof(log_buf) - (p - log_buf), "\n");
             size = fwrite(log_buf, sizeof(char), p - log_buf, inverted_fp);
-
 
             fclose(orig_fp);
         } /** for every prefix */
