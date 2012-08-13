@@ -393,6 +393,12 @@ static void handle_task()
                 }
                 hash_item = hash_item->next;
             }
+            /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
+            if (hash_exist)
+            {
+                //logprintf("multiple: [%s]", task.prefix_array.data[i]);
+                continue;
+            }
             if (NULL == hash_item)
             {
                 size = sizeof(hash_list_ext_t);
@@ -420,12 +426,6 @@ static void handle_task()
             /** 记录已经处理过的到 hash 表中 */
             snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
             logprintf("[Recond]hash_item->prefix = %s", task.prefix_array.data[i]);
-            /** 如果 hash_key 存在,说明已经处理过了,本条跳过 */
-            if (hash_exist)
-            {
-                //logprintf("multiple: [%s]", task.prefix_array.data[i]);
-                continue;
-            }
             /** end of 去重 }*/
 
             /** 扫描整个输入词表,建立索引 */
