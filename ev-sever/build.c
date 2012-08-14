@@ -202,6 +202,7 @@ static int load_original()
 {
     int ret = 0;
     char line_buf[ORIGINAL_LINE_LEN];
+    char *p = NULL;
     FILE *orig_fp     = NULL;
     size_t size = 0;
 
@@ -225,7 +226,18 @@ static int load_original()
             continue;
         }
 
+        /** 为了节省内存,只导入 query 热度(权重)*/
         line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
+        if (NULL != (p = strstr(line_buf, SEPARATOR)))
+        {
+            /** original query */
+            p++;
+        }
+        /** trim brief info */
+        if (p && NULL != (p = strstr(p, SEPARATOR)))
+        {
+            *p = '\0';
+        }
 
         size = sizeof(orig_list_t);
         tmp_orig_list = (orig_list_t *)malloc(size);
@@ -300,6 +312,7 @@ static void handle_task()
     size_t size = 0;
 
     size_t prefix_len = 0;
+    size_t str_len    = 0;
     int prefix_match  = 0;
     int count = 0;
     float weight = 0.0;
@@ -449,8 +462,9 @@ static void handle_task()
                 dict_id++;
                 p = task.prefix_array.data[i];
                 prefix_len   = strlen(p);
+                str_len      = strlen(tmp_buf);
                 prefix_match = 0;
-                for (k = 0; k < prefix_len; k++)
+                for (k = 0; k < prefix_len && k < str_len; k++)
                 {
                     if(p[k] == tmp_buf[k])
                         prefix_match++;
