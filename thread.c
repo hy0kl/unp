@@ -58,6 +58,7 @@ void *server_run(void *arg)
         task_id++;
         pthread_mutex_unlock(&task_queue_mutex);
 
+        //usleep((useconds_t)(5000));
         sleep(1);
 
         if (task_id > 11)
@@ -88,7 +89,7 @@ void *server_core(void *arg)
         pthread_mutex_lock(&task_queue_mutex);
         if (NULL == task_queue_head)
         {
-            // usleep((useconds_t)(5000));
+            //usleep((useconds_t)(5000));
             sleep(2);
             pthread_mutex_unlock(&task_queue_mutex);
             continue;
