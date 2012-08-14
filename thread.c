@@ -19,6 +19,11 @@ typedef struct _task_queue_t
     struct _task_queue_t *next;
 } task_queue_t;
 
+typedef struct _argument_t
+{
+    int tindex;
+} argument_t;
+
 int task_id = 0;
 int g_completed_flag = 0;
 task_queue_t    *task_queue_head = NULL;
@@ -58,10 +63,10 @@ void *server_run(void *arg)
         task_id++;
         pthread_mutex_unlock(&task_queue_mutex);
 
-        //usleep((useconds_t)(5000));
-        sleep(1);
+        usleep((useconds_t)(5000));
+        //sleep(1);
 
-        if (task_id > 11)
+        if (task_id > 31)
         {
             g_completed_flag = 1;
             break;
@@ -73,7 +78,8 @@ void *server_run(void *arg)
 
 void *server_core(void *arg)
 {
-    const int tindex = (int)arg;
+    argument_t *thread_arg = (argument_t *)arg;
+    const int tindex = thread_arg->tindex;
     task_queue_t *tmp_task = NULL;
 
     while (1)
@@ -89,8 +95,8 @@ void *server_core(void *arg)
         pthread_mutex_lock(&task_queue_mutex);
         if (NULL == task_queue_head)
         {
-            //usleep((useconds_t)(5000));
-            sleep(2);
+            usleep((useconds_t)(5000));
+            //sleep(2);
             pthread_mutex_unlock(&task_queue_mutex);
             continue;
         }
@@ -109,8 +115,11 @@ int main(int argc, char *argv[])
 {
     int ret = 0;
     int i = 0;
+    argument_t arg[MAX];
 
     pthread_t *pt_server_core, pt_server_run;
+
+    pthread_mutex_init(&task_queue_mutex, NULL);
 
     // 分配工作线程空间
     pt_server_core = (pthread_t *) calloc(MAX, sizeof(pthread_t));
@@ -131,7 +140,8 @@ int main(int argc, char *argv[])
     /** 创建每个工作者 */
     for (i = 0; i < MAX; ++i)
     {
-        ret = pthread_create(&pt_server_core[i], NULL, server_core, (void *)i);
+        arg[i].tindex = i;
+        ret = pthread_create(&pt_server_core[i], NULL, server_core, (void *)&(arg[i]));
         if ( 0 != ret )
         {
             fprintf(stdout, "create the %dth server_core thread fail, exit.\n", i);
