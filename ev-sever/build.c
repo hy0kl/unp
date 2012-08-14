@@ -396,12 +396,16 @@ static void handle_task()
             hash_item = &(hash_table[hash_key]);
             while (hash_item && '\0' != hash_item->prefix[0])
             {
+#if (_DEBUG)
                 logprintf("hash_item->prefix:[%s] CMP task.prefix_array.data[%d] : [%s]",
                     hash_item->prefix, i, task.prefix_array.data[i]);
+#endif
                 if ((u_char)hash_item->prefix[0] == (u_char)task.prefix_array.data[i][0])
                 {
                     hash_exist = 1;
+#if (_DEBUG)
                     logprintf("find exist prefix: [%s]", task.prefix_array.data[i]);
+#endif
                     break;
                 }
                 hash_item = hash_item->next;
@@ -445,7 +449,9 @@ static void handle_task()
             }
             /** 记录已经处理过的到 hash 表中 */
             snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
+#if (_DEBUG)
             logprintf("[Recond]hash_item->prefix = %s", task.prefix_array.data[i]);
+#endif
             /** end of 去重 }*/
 
             dict_id = 0;
@@ -455,7 +461,9 @@ static void handle_task()
             tmp_orig_list = orig_list;
             while (tmp_orig_list)
             {
+#if (_DEBUG)
                 logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
+#endif
                 snprintf(line_buf, ORIGINAL_LINE_LEN, "%s", tmp_orig_list->orig_line);
                 /** tmp_buf 可以安全复用 */
                 snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
@@ -510,8 +518,10 @@ LOOP_NEXT:
             }
 
             /** 写倒排表 */
+#if (_DEBUG)
             logprintf("[%s] hash_key: %lu, dict_id: %lu, weight:%f",
                 task.prefix_array.data[i], hash_key, task.dict_id, weight);
+#endif
             p = log_buf;
             p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%s\t%lu\t",
               task.prefix_array.data[i], hash_key);
