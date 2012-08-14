@@ -448,7 +448,7 @@ static void handle_task()
             while (tmp_orig_list)
             {
                 snprintf(line_buf, ORIGINAL_LINE_LEN, "%s", tmp_orig_list->orig_line);
-                logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
+                //logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
                 /** tmp_buf 可以安全复用 */
                 snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
                 find = tmp_buf;
@@ -478,10 +478,12 @@ static void handle_task()
                 }
 
                 p = find;
+                /**
                 if (NULL != (find = strstr(p, SEPARATOR)))
                 {
                     *find = '\0';
                 }
+                */
                 // logprintf("weight str: %s", p);
                 weight = (float)atof(p);
 
