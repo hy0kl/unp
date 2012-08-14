@@ -118,7 +118,7 @@ static void parse_task()
     indext_t dict_id   = 0;
     task_queue_t task;
 
-    sleep(10);
+    sleep(5);
 
     fp = fopen(g_original_file, "r");
     if (! fp)
@@ -381,7 +381,7 @@ static void handle_task()
         task_id = task.dict_id;
 
         /** handle every prefix */
-        logprintf("task.prefix_array.count = %d", task.prefix_array.count);
+        //logprintf("task.prefix_array.count = %d", task.prefix_array.count);
         for (i = 0; i < task.prefix_array.count; i++)
         {
             hash_key = hash(task.prefix_array.data[i], gconfig.max_hash_table_size);
@@ -394,9 +394,9 @@ static void handle_task()
             /** 前缀 hash 去重 { */
             hash_exist = 0;
             hash_item = &(hash_table[hash_key]);
-            while (hash_item && hash_item->prefix[0])
+            while (hash_item && '\0' != hash_item->prefix[0])
             {
-                logprintf("hash_item->prefix:[%s] CMP task.prefix_array.data[%d] : %s",
+                logprintf("hash_item->prefix:[%s] CMP task.prefix_array.data[%d] : [%s]",
                     hash_item->prefix, i, task.prefix_array.data[i]);
                 if ((u_char)hash_item->prefix[0] == (u_char)task.prefix_array.data[i][0])
                 {
@@ -414,6 +414,13 @@ static void handle_task()
             }
             if (NULL == hash_item)
             {
+                //logprintf("---- at create new memory ---");
+                hash_item = &(hash_table[hash_key]);
+                while (hash_item->next)
+                {
+                    hash_item = hash_item->next;
+                }
+
                 size = sizeof(hash_list_ext_t);
                 tmp_hash_item = (hash_list_ext_t *)malloc(size);
                 if (NULL == tmp_hash_item)
@@ -422,7 +429,6 @@ static void handle_task()
                         size);
                     goto FATAL_ERROR;
                 }
-                tmp_hash_item->next = NULL;
 
                 size = sizeof(char) * QUERY_LEN;
                 tmp_hash_item->prefix = (char *)malloc(size);
@@ -433,6 +439,7 @@ static void handle_task()
                     goto FATAL_ERROR;
                 }
 
+                tmp_hash_item->next = NULL;
                 hash_item->next = tmp_hash_item;
                 hash_item = tmp_hash_item;
             }
@@ -441,14 +448,15 @@ static void handle_task()
             logprintf("[Recond]hash_item->prefix = %s", task.prefix_array.data[i]);
             /** end of 去重 }*/
 
-            /** 扫描整个输入词表,建立索引 */
             dict_id = 0;
             memset(&weight_array, 0, sizeof(weight_array_t));
+
+            /** 扫描整个输入词表,建立索引 */
             tmp_orig_list = orig_list;
             while (tmp_orig_list)
             {
+                logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
                 snprintf(line_buf, ORIGINAL_LINE_LEN, "%s", tmp_orig_list->orig_line);
-                //logprintf("tmp_orig_list->orig_line: %s", tmp_orig_list->orig_line);
                 /** tmp_buf 可以安全复用 */
                 snprintf(tmp_buf, sizeof(tmp_buf), "%s", line_buf);
                 find = tmp_buf;
@@ -485,7 +493,9 @@ static void handle_task()
                 }
                 */
                 // logprintf("weight str: %s", p);
-                weight = (float)atof(p);
+                weight = 0;
+                if (p)
+                    weight = (float)atof(p);
 
                 count = weight_array.count;
                 if(count < DEFAULT_WEIGHT_ARRAY_SIZE)
