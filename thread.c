@@ -158,5 +158,7 @@ int main(int argc, char *argv[])
         pthread_join(pt_server_core[i], NULL);
     }
 
+    fprintf(stdout, "sizeof(pthread_mutex_t) = %lu\n", sizeof(pthread_mutex_t));
+
     return 0;
 }

@@ -169,6 +169,9 @@ if [ "build" == "$runtype" ]; then
         cat "$data_path/index_dict.$i" >> "$data_path/index_dict"
         cat "$data_path/inverted_index.$i" >> "$data_path/inverted_index"
 
+        rm "$data_path/index_dict.$i"
+        rm "$data_path/inverted_index.$i"
+
         i=$((i + 1))
     done
 

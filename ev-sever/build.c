@@ -558,7 +558,7 @@ int main(int argc, char *argv[])
     /** 传递数据到工作线程 */
     argument_t *arg = NULL;
 
-    // signal_setup();
+    signal_setup();
     init_config();
 
     while (-1 != (c = getopt(argc, argv,
