@@ -16,6 +16,7 @@ output_fp_t     *output_fp = NULL;
 
 char g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
 int  g_parse_completed = 0;
+int  g_thread_num      = THREAD_NUM;
 /** END for global vars */
 
 static void init_config()
@@ -86,6 +87,7 @@ static void usage()
 {
     printf(BUILD_PACKAGE " " BUILD_VERSION "\n");
     printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
+    printf("-T <num>      set worker thread number(default: %d)\n", THREAD_NUM);
     printf("-v            show version and help\n"
            "-l <level>    set log lever\n"
            "-o <file>     set original file name adn path, ABS path is better\n"
@@ -548,7 +550,6 @@ int main(int argc, char *argv[])
     int i = 0;
     int ret = 0;
     int t_opt;
-    int thread_num = THREAD_NUM;
     char file_name[FILE_NAME_LEN];
     FILE *fp = NULL;
 
@@ -565,6 +566,7 @@ int main(int argc, char *argv[])
 
     while (-1 != (c = getopt(argc, argv,
         "s:"  /* max hash table size */
+        "T:"  /* thread number */
         "v"   /* show version */
         "l:"  /* log level */
         "o:"  /* input original file name */
@@ -580,6 +582,14 @@ int main(int argc, char *argv[])
             if (size > 0 && size > MAX_HASH_TABLE_SIZE)
             {
                 gconfig.max_hash_table_size = size;
+            }
+            break;
+
+        case 'T':
+            size = (size_t)atoll(optarg);
+            if (size > 0 && size > THREAD_NUM)
+            {
+                g_thread_num = (int)size;
             }
             break;
 
@@ -654,7 +664,7 @@ int main(int argc, char *argv[])
     }
 #endif
     /** 申请输出文件针指内存空间 */
-    size = sizeof(output_fp_t) * thread_num;
+    size = sizeof(output_fp_t) * g_thread_num;
     output_fp = (output_fp_t *)malloc(size);
     if (NULL == output_fp)
     {
@@ -666,7 +676,7 @@ int main(int argc, char *argv[])
     pthread_mutex_init(&task_queue_mutex, NULL);
 
     /** 初始化线程参数 */
-    size = sizeof(argument_t) * thread_num;
+    size = sizeof(argument_t) * g_thread_num;
     arg = (argument_t *)malloc(size);
     if (NULL == arg)
     {
@@ -675,9 +685,9 @@ int main(int argc, char *argv[])
     }
 
     /* 分配工作者线程空间 */
-    size = sizeof(pthread_t) * thread_num;
+    size = sizeof(pthread_t) * g_thread_num;
     handle_core = (pthread_t *)malloc(size);
-    fprintf(stderr, "malloc threadid for work threads, thread num is %d\n", thread_num);
+    fprintf(stderr, "malloc threadid for work threads, thread num is %d\n", g_thread_num);
     if (NULL == handle_core)
     {
         fprintf(stderr, "Can NOT malloc memory for handle_core, need size: %lu\n", size);
@@ -694,8 +704,11 @@ int main(int argc, char *argv[])
     fprintf(stderr, "create parse_task main thread OK.\n");
 #endif
 
+    /** give parse_task time to create task queue */
+    usleep((useconds_t)(50));
+
     /** open fp for every worker */
-    for (i = 0; i < thread_num; ++i)
+    for (i = 0; i < g_thread_num; ++i)
     {
         snprintf(file_name, FILE_NAME_LEN, "%s.%d", gconfig.inverted_index, i);
         fp = fopen(file_name, "w");
@@ -719,7 +732,7 @@ int main(int argc, char *argv[])
     }
 
     /** 创建每个工作者 */
-    for (i = 0; i < thread_num; i++)
+    for (i = 0; i < g_thread_num; i++)
     {
         arg[i].tindex = i;
         ret = pthread_create(&handle_core[i], NULL, handle_task, (void *)&(arg[i]));
@@ -736,14 +749,14 @@ int main(int argc, char *argv[])
 
     pthread_join(parse_core, NULL);
 
-    for (i = 0; i < thread_num; ++i)
+    for (i = 0; i < g_thread_num; ++i)
     {
         pthread_join(handle_core[i], NULL);
 
     }
 
     /** close all output fp */
-    for (i = 0; i < thread_num; i++)
+    for (i = 0; i < g_thread_num; i++)
     {
         fclose(output_fp[i].inverted_fp);
         fclose(output_fp[i].dict_fp);
