@@ -1,10 +1,14 @@
 #ifndef _BUILD_H_
 #define _BUILD_H_
+
+#include <pthread.h>
 #include "util.h"
+#include "pinyin_data.h"
 
 #define BUILD_PACKAGE   "build-worker"
 #define BUILD_VERSION   "1.0"
 
+#define THREAD_NUM      16
 #define DEFAULT_ORIGINAL_FILE   "./data/original"
 
 #define SEPARATOR           "\t"
@@ -40,7 +44,7 @@ struct _task_queue_t
     prefix_array_t  prefix_array;
     char            original_line[ORIGINAL_LINE_LEN];
     indext_t        dict_id;
-    //task_queue_t   *next;
+    task_queue_t   *next;
 };
 
 typedef struct _weight_item_t
@@ -58,7 +62,6 @@ typedef struct _weight_array_t
 /** hash table list, hash 表拉链,解决冲突,建立索引时用来去重 */
 typedef struct _hash_list_ext_t
 {
-    // index_item_t        *index_item;
     char                    *prefix;
     struct _hash_list_ext_t *next;
 } hash_list_ext_t;
@@ -68,5 +71,16 @@ typedef struct _orig_list_t
     char *orig_line;
     struct _orig_list_t *next;
 } orig_list_t;
+
+typedef struct _argument_t
+{
+        int tindex;
+} argument_t;
+
+typedef struct _output_fp_t
+{
+    FILE *inverted_fp;
+    FILE *dict_fp;
+} output_fp_t;
 
 #endif

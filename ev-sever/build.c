@@ -1,18 +1,21 @@
-#include <pthread.h>
 #include "build.h"
-#include "pinyin_data.h"
+
 /**
  * global variables
  * */
 config_t      gconfig;
 
-hash_list_ext_t  *hash_table  = NULL;
-orig_list_t      *orig_list   = NULL;
+hash_list_ext_t *hash_table  = NULL;
+pthread_mutex_t *hash_table_mutex = NULL;
+/** 为了提高性能,将原始文件前繈与权重加载到内存 */
+orig_list_t     *orig_list   = NULL;
+task_queue_t    *task_queue_head = NULL;
+task_queue_t    *task_queue_tail = NULL;
+pthread_mutex_t  task_queue_mutex;
+output_fp_t     *output_fp = NULL;
 
-indext_t  g_dict_id = 0;
-char      g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
-int       g_parse_completed = 0;
-int pipe_fp[2];
+char g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
+int  g_parse_completed = 0;
 /** END for global vars */
 
 static void init_config()
@@ -42,33 +45,11 @@ static int init_hash_table()
         ret = -1;
         goto FINISH;
     }
-    //memset(hash_table, 0, gconfig.max_hash_table_size);
+
     for (i = 0; i < gconfig.max_hash_table_size; i++)
     {
         hash_table[i].next = NULL;
 
-        /**
-        size = sizeof(index_item_t);
-        hash_table[i].index_item = (index_item_t *)malloc(size);
-        if (NULL == hash_table[i].index_item)
-        {
-            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item, need size: %ld\n",
-                i, size);
-            ret = -1;
-            goto FINISH;
-        }
-
-        size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
-        hash_table[i].index_item->index_chain = (indext_t *)malloc(size);
-        if (NULL == hash_table[i].index_item->index_chain)
-        {
-            fprintf(stderr, "Can NOT malloc memory for ndex_hash_table[%d].index_item->index_chain, need size: %ld\n",
-                i, size);
-            ret = -1;
-            goto FINISH;
-        }
-        hash_table[i].index_item->size = 0;
-        */
         size = sizeof(char) * QUERY_LEN;
         hash_table[i].prefix = (char *)malloc(size);
         if (NULL == hash_table[i].prefix)
@@ -79,6 +60,22 @@ static int init_hash_table()
             goto FINISH;
         }
         hash_table[i].prefix[0] = '\0';
+    }
+
+    /** 为 hash 表的每条拉链申请互斥锁,防止写乱 */
+    size = sizeof(pthread_mutex_t) * gconfig.max_hash_table_size;
+    hash_table_mutex = (pthread_mutex_t *)malloc(size);
+    if (NULL == hash_table_mutex)
+    {
+        fprintf(stderr, "Can NOT malloc memory for hash table mutex, need size: %ld\n",
+            size);
+        ret = -1;
+        goto FINISH;
+    }
+    /** 初始化 hash 表互斥锁 */
+    for (i = 0; i < gconfig.max_hash_table_size; i++)
+    {
+        pthread_mutex_init(&(hash_table_mutex[i]), NULL);
     }
 
 FINISH:
@@ -99,11 +96,10 @@ static void usage()
     return;
 }
 
-static void parse_task()
+void *parse_task(void *arg)
 {
     char line_buf[ORIGINAL_LINE_LEN];
     char prefix[PREFIX_LEN];
-    //char tmp_buf[QUERY_LEN];
     char *p = NULL;
 
     FILE *fp = NULL;
@@ -111,14 +107,10 @@ static void parse_task()
     int   k  = 0;
     int result = 0;
     int chinese_char_flag = 0;
-    //size_t size = 0;
-
-    close(pipe_fp[PIPE_READER]);
+    size_t size = 0;
 
     indext_t dict_id   = 0;
-    task_queue_t task;
-
-    sleep(5);
+    task_queue_t *task = NULL;
 
     fp = fopen(g_original_file, "r");
     if (! fp)
@@ -138,22 +130,31 @@ static void parse_task()
 
         line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
         // logprintf("every line: [%s]", line_buf);
-
         dict_id++;
         chinese_char_flag = 0;
 
         /** 创建工作队列单个任务 */
-        memset(&task, 0, sizeof(task_queue_t));
+        size = sizeof(task_queue_t);
+        task = (task_queue_t *)malloc(size);
+        if (NULL == task)
+        {
+            fprintf(stderr, "Can NOT malloc memory for task, task_id = %lu, need size: %lu\n",
+                dict_id, size);
+            g_parse_completed = 1;
+            goto FINISH;
+        }
 
-        task.dict_id = dict_id;
-        snprintf(task.original_line, ORIGINAL_LINE_LEN, "%s", line_buf);
+        task->next = NULL;
+        task->dict_id = dict_id;
+        snprintf(task->original_line, ORIGINAL_LINE_LEN, "%s", line_buf);
 
         if (NULL != (p = strstr(line_buf, SEPARATOR)))
         {
             *p = '\0';
         }
         //logprintf("every line: [%s]", line_buf);
-        k = task.prefix_array.count = 0;
+        k = 0;
+        task->prefix_array.count = 0;
         for (i = 1; i <= MB_LENGTH && k < PREFIX_ARRAY_SIZE; i++)
         {
             /** Cleared buffer */
@@ -166,9 +167,9 @@ static void parse_task()
                 chinese_char_flag = 1;
             }
 
-            k = task.prefix_array.count;
-            snprintf(task.prefix_array.data[k], PREFIX_LEN, "%s", prefix);
-            task.prefix_array.count++;
+            k = task->prefix_array.count;
+            snprintf(task->prefix_array.data[k], PREFIX_LEN, "%s", prefix);
+            task->prefix_array.count++;
             logprintf("every prefix: [%s]", prefix);
 
             if (result >= strlen(line_buf))
@@ -184,18 +185,36 @@ static void parse_task()
             ;
         }
 
-        write(pipe_fp[PIPE_WRITER], &task, sizeof(task_queue_t));
-        usleep((useconds_t)(5000));
+        pthread_mutex_lock(&task_queue_mutex);
+        if (NULL == task_queue_head && NULL == task_queue_tail)
+        {
+            task_queue_head = task;
+            task_queue_tail = task;
+        }
+        else if (NULL == task_queue_head && NULL != task_queue_tail)
+        {
+            task_queue_head = task_queue_tail;
+        }
+        else if (task_queue_tail)
+        {
+            task_queue_tail->next = task;
+            task_queue_tail = task;
+        }
+        else
+        {
+            fprintf(stderr, "task_queue has something wrong.\n");
+            pthread_mutex_unlock(&task_queue_mutex);
+            goto FINISH;
+        }
+        pthread_mutex_unlock(&task_queue_mutex);
     }
-
-    task.dict_id = 0;
-    write(pipe_fp[PIPE_WRITER], &task, sizeof(task_queue_t));
 
     fprintf(stderr, "parse process completed.\n");
     fclose(fp);
 
 FINISH:
-    return;
+    g_parse_completed = 1;
+    return NULL;
 }
 
 static int load_original()
@@ -286,23 +305,25 @@ static int weight_cmp(const void *a, const void *b)
     return bb->weight - aa->weight;
 }
 
-static void handle_task()
+void *handle_task(void *arg)
 {
+    argument_t *thread_arg = (argument_t *)arg;
+    const int tindex = thread_arg->tindex;
+
     int i = 0;
     int k = 0;
     int hash_exist = 0;
 
-    FILE *inverted_fp = NULL;   // inverted table
-    FILE *dict_fp     = NULL;
+    FILE *inverted_fp = output_fp[tindex].inverted_fp;   // inverted table
+    FILE *dict_fp     = output_fp[tindex].dict_fp;
 
-    task_queue_t task;
     indext_t     hash_key = 0;
     indext_t     dict_id  = 0;
     hash_list_ext_t *hash_item     = NULL;
     hash_list_ext_t *tmp_hash_item = NULL;
     orig_list_t     *tmp_orig_list = NULL;
-    weight_array_t weight_array;
-    indext_t task_id = 0;
+    weight_array_t   weight_array;
+    task_queue_t    *task = NULL;
 
     char tmp_buf[ORIGINAL_LINE_LEN];
     char line_buf[ORIGINAL_LINE_LEN];
@@ -333,61 +354,41 @@ static void handle_task()
         exit(-10);
     }
 
-    if (0 != init_hash_table())
-    {
-        fprintf(stderr, "init_hash_table fail.\n");
-        exit(-11);
-    }
-#if (_DEBUG)
-    else
-    {
-        logprintf("init hash table success.");
-    }
-#endif
-
-    if (0 != load_original())
-    {
-        fprintf(stderr, "load original fail.\n");
-        exit(-12);
-    }
-#if (_DEBUG)
-    else
-    {
-        logprintf("load original data success.");
-    }
-#endif
-
-    close(pipe_fp[PIPE_WRITER]);
     while (1)
     {
-        memset(&task, 0, sizeof(task_queue_t));
-        read(pipe_fp[PIPE_READER], &task, sizeof(task_queue_t));
-
-        if (0 == task.dict_id)
+        if (g_parse_completed && NULL == task_queue_head)
         {
-            fprintf(stderr, "handle process completed.\n");
+            fprintf(stderr, "  [%d]My job has done.\n", tindex);
             break;
         }
 #if (_DEBUG)
-        logprintf("get handle task id: [%lu]", task.dict_id);
-        logprintf("recv data: [%s]", task.original_line);
+        fprintf(stderr, "I am worker: %d\n", tindex);
 #endif
-        if (task_id == task.dict_id)
+
+        pthread_mutex_lock(&task_queue_mutex);
+        if (NULL == task_queue_head)
         {
-            logprintf("Get same task.");
-            usleep((useconds_t)5000);
+            usleep((useconds_t)(5000));
+            pthread_mutex_unlock(&task_queue_mutex);
             continue;
         }
-        task_id = task.dict_id;
+
+        task = task_queue_head;
+        task_queue_head = task_queue_head->next;
+        pthread_mutex_unlock(&task_queue_mutex);
+
+#if (_DEBUG)
+        logprintf("get handle task id: [%lu]", task->dict_id);
+        logprintf("recv data: [%s]", task->original_line);
+#endif
 
         /** handle every prefix */
-        //logprintf("task.prefix_array.count = %d", task.prefix_array.count);
-        for (i = 0; i < task.prefix_array.count; i++)
+        for (i = 0; i < task->prefix_array.count; i++)
         {
-            hash_key = hash(task.prefix_array.data[i], gconfig.max_hash_table_size);
+            hash_key = hash(task->prefix_array.data[i], gconfig.max_hash_table_size);
             if (hash_key < 0)
             {
-                fprintf(stderr, "hash('%s') error.\n", task.prefix_array.data[i]);
+                fprintf(stderr, "hash('%s') error.\n", task->prefix_array.data[i]);
                 break;
             }
 
@@ -398,13 +399,13 @@ static void handle_task()
             {
 #if (_DEBUG)
                 logprintf("hash_item->prefix:[%s] CMP task.prefix_array.data[%d] : [%s]",
-                    hash_item->prefix, i, task.prefix_array.data[i]);
+                    hash_item->prefix, i, task->prefix_array.data[i]);
 #endif
-                if ((u_char)hash_item->prefix[0] == (u_char)task.prefix_array.data[i][0])
+                if ((u_char)hash_item->prefix[0] == (u_char)task->prefix_array.data[i][0])
                 {
                     hash_exist = 1;
 #if (_DEBUG)
-                    logprintf("find exist prefix: [%s]", task.prefix_array.data[i]);
+                    logprintf("find exist prefix: [%s]", task->prefix_array.data[i]);
 #endif
                     break;
                 }
@@ -416,8 +417,11 @@ static void handle_task()
                 //logprintf("multiple: [%s]", task.prefix_array.data[i]);
                 continue;
             }
+            /** 写 hash 表需要加锁 */
+            pthread_mutex_lock(&(hash_table_mutex[tindex]));
             if (NULL == hash_item)
             {
+                /** 如果申请内存失败,则释放锁,防止死锁 */
                 //logprintf("---- at create new memory ---");
                 hash_item = &(hash_table[hash_key]);
                 while (hash_item->next)
@@ -431,6 +435,7 @@ static void handle_task()
                 {
                     fprintf(stderr, "Can NOT malloc memory for tmp_hash_item, need size: %ld\n",
                         size);
+                    pthread_mutex_unlock(&(hash_table_mutex[tindex]));
                     goto FATAL_ERROR;
                 }
 
@@ -440,6 +445,7 @@ static void handle_task()
                 {
                     fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->prefix, need size: %ld\n",
                         size);
+                    pthread_mutex_unlock(&(hash_table_mutex[tindex]));
                     goto FATAL_ERROR;
                 }
 
@@ -448,10 +454,11 @@ static void handle_task()
                 hash_item = tmp_hash_item;
             }
             /** 记录已经处理过的到 hash 表中 */
-            snprintf(hash_item->prefix, QUERY_LEN, "%s", task.prefix_array.data[i]);
+            snprintf(hash_item->prefix, QUERY_LEN, "%s", task->prefix_array.data[i]);
 #if (_DEBUG)
-            logprintf("[Recond]hash_item->prefix = %s", task.prefix_array.data[i]);
+            logprintf("[Recond]hash_item->prefix = %s", task->prefix_array.data[i]);
 #endif
+            pthread_mutex_unlock(&(hash_table_mutex[tindex]));
             /** end of 去重 }*/
 
             dict_id = 0;
@@ -476,7 +483,7 @@ static void handle_task()
                 strtolower(tmp_buf, strlen(tmp_buf), DEFAULT_ENCODING);
 
                 dict_id++;
-                p = task.prefix_array.data[i];
+                p = task->prefix_array.data[i];
                 prefix_len   = strlen(p);
                 str_len      = strlen(tmp_buf);
                 prefix_match = 0;
@@ -494,12 +501,6 @@ static void handle_task()
                 }
 
                 p = find;
-                /**
-                if (NULL != (find = strstr(p, SEPARATOR)))
-                {
-                    *find = '\0';
-                }
-                */
                 // logprintf("weight str: %s", p);
                 weight = 0;
                 if (p)
@@ -520,11 +521,11 @@ LOOP_NEXT:
             /** 写倒排表 */
 #if (_DEBUG)
             logprintf("[%s] hash_key: %lu, dict_id: %lu, weight:%f",
-                task.prefix_array.data[i], hash_key, task.dict_id, weight);
+                task->prefix_array.data[i], hash_key, task->dict_id, weight);
 #endif
             p = log_buf;
             p += snprintf(p, sizeof(log_buf) - (p - log_buf), "%s\t%lu\t",
-              task.prefix_array.data[i], hash_key);
+              task->prefix_array.data[i], hash_key);
 
             qsort(weight_array.weight_item, weight_array.count, sizeof(weight_item_t), weight_cmp);
             for (k = 0; k < weight_array.count; k++)
@@ -539,14 +540,19 @@ LOOP_NEXT:
         } /** for every prefix */
 
         /** writ [index_dict] file */
-        snprintf(log_buf, sizeof(log_buf), "%lu\t%s", task.dict_id, task.original_line);
+        snprintf(log_buf, sizeof(log_buf), "%lu\t%s", task->dict_id, task->original_line);
         size = fwrite(log_buf, sizeof(char), strlen(log_buf), dict_fp);
-    } /** big loop */
 
-    fclose(dict_fp);
-    fclose(inverted_fp);
+#if (_DEBUG)
+        fprintf(stderr, "  [%d] I handle task: %lu\n", tindex, task->dict_id);
+#endif
+        if (task)
+        {
+            free(task);
+        }
+     }
 
-    return;
+    return NULL;
 
 FATAL_ERROR:
     exit(111);
@@ -555,12 +561,22 @@ FATAL_ERROR:
 int main(int argc, char *argv[])
 {
     int c;
+    int i = 0;
+    int ret = 0;
     int t_opt;
+    int thread_num = THREAD_NUM;
+    char file_name[FILE_NAME_LEN];
+    FILE *fp = NULL;
 
     size_t size = 0;
-    pid_t  pid;
+    /** 主线程,负责产生任务队列 */
+    pthread_t  parse_core;
+    /** 工作线程 */
+    pthread_t *handle_core = NULL;
+    /** 传递数据到工作线程 */
+    argument_t *arg = NULL;
 
-    signal_setup();
+    // signal_setup();
     init_config();
 
     while (-1 != (c = getopt(argc, argv,
@@ -629,31 +645,116 @@ int main(int argc, char *argv[])
     logprintf("hash_table_size: %lu", gconfig.max_hash_table_size);
 #endif
 
-    /** init pipe */
-    if (0 != pipe(pipe_fp))
+    /** 初始化全局结构体 */
+    if (0 != init_hash_table())
     {
-        perror("pipe()");
-        exit(1);
+        fprintf(stderr, "init_hash_table fail.\n");
+        exit(-11);
     }
-
-    if (-1 == (pid = fork()))
-    {
-        fprintf(stderr, "fork() fail, please check it out.\n");
-        exit(-2);
-    }
-    else if (0 == pid)
-    {
 #if (_DEBUG)
-        logprintf("I am in child process to parse task.");
-#endif
-        parse_task();
-    }
     else
     {
-#if (_DEBUG)
-        logprintf("I am in parent process to handle every task.");
+        logprintf("init hash table success.");
+    }
 #endif
-        handle_task();
+
+    if (0 != load_original())
+    {
+        fprintf(stderr, "load original fail.\n");
+        exit(-12);
+    }
+#if (_DEBUG)
+    else
+    {
+        logprintf("load original data success.");
+    }
+#endif
+    /** 申请输出文件针指内存空间 */
+    size = sizeof(output_fp_t) * thread_num;
+    output_fp = (output_fp_t *)malloc(size);
+    if (NULL == output_fp)
+    {
+        fprintf(stderr, "Can NOT malloc memory for output_fp, need size: %lu\n", size);
+        exit(-1);
+    }
+
+    /** 初始化任务队列互斥锁 */
+    pthread_mutex_init(&task_queue_mutex, NULL);
+
+    /** 初始化线程参数 */
+    size = sizeof(argument_t) * thread_num;
+    arg = (argument_t *)malloc(size);
+    if (NULL == arg)
+    {
+        fprintf(stderr, "Can NOT malloc memory for arg, need size: %lu\n", size);
+        exit(-1);
+    }
+
+    /* 分配工作者线程空间 */
+    size = sizeof(pthread_t) * thread_num;
+    handle_core = (pthread_t *)malloc(size);
+    fprintf(stderr, "malloc threadid for work threads, thread num is %d\n", thread_num);
+    if (NULL == handle_core)
+    {
+        fprintf(stderr, "Can NOT malloc memory for handle_core, need size: %lu\n", size);
+        exit(-1);
+    }
+
+    ret = pthread_create(&(parse_core), NULL, parse_task, NULL);
+    if ( 0 != ret )
+    {
+        fprintf(stderr, "Create parse_task thread fail.\n");
+        exit (-1);
+    }
+#if (_DEBUG)
+    fprintf(stderr, "create parse_task main thread OK.\n");
+#endif
+
+    /** 创建每个工作者 */
+    for (i = 0; i < thread_num; ++i)
+    {
+        arg[i].tindex = i;
+        
+        snprintf(file_name, FILE_NAME_LEN, "%s.%d", gconfig.inverted_index, i);
+        fp = fopen(file_name, "w");
+        if (NULL == fp)
+        {
+            fprintf(stderr, "Can NOT open inverted file to write data: [%s]\n",
+                file_name);
+            exit(-11);
+        }
+        output_fp[i].inverted_fp = fp;
+
+        snprintf(file_name, FILE_NAME_LEN, "%s.%d", gconfig.index_dict, i);
+        fp = fopen(file_name, "w");
+        if (NULL == fp)
+        {
+            fprintf(stderr, "Can NOT open inverted file to write data: [%s]\n",
+                file_name);
+            exit(-11);
+        }
+        output_fp[i].dict_fp = fp;
+
+        ret = pthread_create(&handle_core[i], NULL, handle_task, (void *)&(arg[i]));
+        if ( 0 != ret )
+        {
+            fprintf(stderr, "create the %d  handle_task thread fail.\n", i);
+            exit (-1);
+        }
+#if (_DEBUG)
+        fprintf(stderr, "create the %d the handle_task thread success, thread id is %lu.\n",
+            i, (unsigned long int)handle_core[i]);
+#endif
+    }
+
+    pthread_join(parse_core, NULL);
+
+    for (i = 0; i < thread_num; ++i)
+    {
+        pthread_join(handle_core[i], NULL);
+
+        fclose(output_fp[i].inverted_fp);
+        fclose(output_fp[i].dict_fp);
     }
 
     return 0;
