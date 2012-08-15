@@ -19,7 +19,7 @@ int  g_parse_completed = 0;
 int  g_thread_num      = THREAD_NUM;
 /** END for global vars */
 
-static void init_config()
+static void init_config(void)
 {
     gconfig.log_level    = 4;
     gconfig.max_hash_table_size = MAX_HASH_TABLE_SIZE;
@@ -30,7 +30,7 @@ static void init_config()
     return;
 }
 
-static int init_hash_table()
+static int init_hash_table(void)
 {
     int ret = 0;
     int i   = 0;
@@ -83,7 +83,7 @@ FINISH:
     return ret;
 }
 
-static void usage()
+static void usage(void)
 {
     printf(BUILD_PACKAGE " " BUILD_VERSION "\n");
     printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
@@ -221,7 +221,7 @@ FINISH:
     return NULL;
 }
 
-static int load_original()
+static int load_original(void)
 {
     int ret = 0;
     char line_buf[ORIGINAL_LINE_LEN];
