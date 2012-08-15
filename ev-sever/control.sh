@@ -161,7 +161,7 @@ if [ "build" == "$runtype" ]; then
         echo "build success!"
     fi
 
-    i= 0;
+    i=0;
     : > "$data_path/index_dict"
     : > "$data_path/inverted_index"
     while ((i < 16))
