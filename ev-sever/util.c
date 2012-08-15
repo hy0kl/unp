@@ -88,7 +88,7 @@ static void handler(int signo)
     return (void)0;
 }
 
-void signal_setup()
+void signal_setup(void)
 {
     static int signo[] = {
         SIGHUP,

@@ -15,7 +15,7 @@ int daemonize(int nochdir, int noclose);
 /**
  * set up signal
  * */
-void signal_setup();
+void signal_setup(void);
 
 indext_t hash(const char *key, const int hash_table_size);
 

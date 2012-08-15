@@ -314,7 +314,7 @@ static void api_proxy_handler(struct evhttp_request *req, void *arg)
     return;
 }
 
-static void init_config()
+static void init_config(void)
 {
     gconfig.do_daemonize = 1;
     gconfig.port         = DEFAULT_PORT;
@@ -330,7 +330,7 @@ static void init_config()
     return;
 }
 
-static void usage()
+static void usage(void)
 {
     printf(PACKAGE " " VERSION "\n");
     printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
@@ -351,7 +351,7 @@ static void usage()
     return;
 }
 
-static int load_index()
+static int load_index(void)
 {
     int   ret = 0;
     FILE *fp = NULL;
@@ -576,7 +576,7 @@ FINISH:
 /**
  * 申请程序需要的内存空间
  * */
-static int init_search_library()
+static int init_search_library(void)
 {
     int ret = 0;
     int i = 0;
