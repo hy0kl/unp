@@ -13,6 +13,7 @@ data_path="${work_path}/data"
 script="${work_path}/script"
 
 hz2py="${contrib_path}/hz2py"
+thread_num=32
 
 # 1 亿内最大的素数
 #prime_number=99999989
@@ -150,7 +151,7 @@ if [ "build" == "$runtype" ]; then
     echo "build index and dict data"
     #create_data $prime_number
     cp "$data_path/original" "$data_path/original.$time_str"
-    $work_path/build -s $prime_number
+    $work_path/build -s $prime_number -T $thread_num
 
     ret=$?
     if ((0 != ret))
@@ -164,7 +165,7 @@ if [ "build" == "$runtype" ]; then
     i=0;
     : > "$data_path/index_dict"
     : > "$data_path/inverted_index"
-    while ((i < 16))
+    while ((i < thread_num))
     do
         cat "$data_path/index_dict.$i" >> "$data_path/index_dict"
         cat "$data_path/inverted_index.$i" >> "$data_path/inverted_index"
