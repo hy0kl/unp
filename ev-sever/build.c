@@ -354,7 +354,7 @@ void *handle_task(void *arg)
         pthread_mutex_lock(&task_queue_mutex);
         if (NULL == task_queue_head)
         {
-            usleep((useconds_t)(5));
+            usleep((useconds_t)(1));
             pthread_mutex_unlock(&task_queue_mutex);
             continue;
         }
