@@ -537,6 +537,7 @@ LOOP_NEXT:
         if (task)
         {
             free(task);
+            task = NULL;
         }
      }
 
@@ -705,7 +706,7 @@ int main(int argc, char *argv[])
 #endif
 
     /** give parse_task time to create task queue */
-    usleep((useconds_t)(50));
+    usleep((useconds_t)(10));
 
     /** open fp for every worker */
     for (i = 0; i < g_thread_num; ++i)
