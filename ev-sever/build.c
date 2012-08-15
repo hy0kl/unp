@@ -170,7 +170,9 @@ void *parse_task(void *arg)
             k = task->prefix_array.count;
             snprintf(task->prefix_array.data[k], PREFIX_LEN, "%s", prefix);
             task->prefix_array.count++;
+#if (_DEBUG)
             logprintf("every prefix: [%s]", prefix);
+#endif
 
             if (result >= strlen(line_buf))
             {
