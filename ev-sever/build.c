@@ -338,22 +338,6 @@ void *handle_task(void *arg)
     int count = 0;
     float weight = 0.0;
 
-    inverted_fp = fopen(gconfig.inverted_index, "w");
-    if (NULL == inverted_fp)
-    {
-        fprintf(stderr, "Can NOT open inverted index file to write data: [%s]\n",
-            gconfig.inverted_index);
-        exit(-9);
-    }
-
-    dict_fp = fopen(gconfig.index_dict, "w");
-    if (NULL == dict_fp)
-    {
-        fprintf(stderr, "Can NOT open dict file to write data: [%s]\n",
-            gconfig.index_dict);
-        exit(-10);
-    }
-
     while (1)
     {
         if (g_parse_completed && NULL == task_queue_head)
@@ -552,10 +536,8 @@ LOOP_NEXT:
         }
      }
 
-    return NULL;
-
 FATAL_ERROR:
-    exit(111);
+    return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -710,11 +692,9 @@ int main(int argc, char *argv[])
     fprintf(stderr, "create parse_task main thread OK.\n");
 #endif
 
-    /** 创建每个工作者 */
+    /** open fp for every worker */
     for (i = 0; i < thread_num; ++i)
     {
-        arg[i].tindex = i;
-        
         snprintf(file_name, FILE_NAME_LEN, "%s.%d", gconfig.inverted_index, i);
         fp = fopen(file_name, "w");
         if (NULL == fp)
@@ -734,7 +714,12 @@ int main(int argc, char *argv[])
             exit(-11);
         }
         output_fp[i].dict_fp = fp;
+    }
 
+    /** 创建每个工作者 */
+    for (i = 0; i < thread_num; i++)
+    {
+        arg[i].tindex = i;
         ret = pthread_create(&handle_core[i], NULL, handle_task, (void *)&(arg[i]));
         if ( 0 != ret )
         {
@@ -753,6 +738,11 @@ int main(int argc, char *argv[])
     {
         pthread_join(handle_core[i], NULL);
 
+    }
+
+    /** close all output fp */
+    for (i = 0; i < thread_num; i++)
+    {
         fclose(output_fp[i].inverted_fp);
         fclose(output_fp[i].dict_fp);
     }
