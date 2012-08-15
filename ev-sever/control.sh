@@ -161,6 +161,17 @@ if [ "build" == "$runtype" ]; then
         echo "build success!"
     fi
 
+    i= 0;
+    : > "$data_path/index_dict"
+    : > "$data_path/inverted_index"
+    while ((i < 16))
+    do
+        cat "$data_path/index_dict.$i" >> "$data_path/index_dict"
+        cat "$data_path/inverted_index.$i" >> "$data_path/inverted_index"
+
+        i=$((i + 1))
+    done
+
     cp "$data_path/index_dict" "$data_path/index_dict.$time_str"
     cp "$data_path/inverted_index" "$data_path/inverted_index.$time_str"
 
