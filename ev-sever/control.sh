@@ -14,10 +14,12 @@ script="${work_path}/script"
 
 hz2py="${contrib_path}/hz2py"
 
+# 100万内最大的素数
+#prime_number=999983
 # 1 亿内最大的素数
 #prime_number=99999989
-prime_number=9999991
-dict_number=8000
+prime_number=999983
+dict_number=80000
 
 Usage="$0 <runtype:start|stop|make|build|hash|pretreat>"
 if [ $# -lt 1 ];

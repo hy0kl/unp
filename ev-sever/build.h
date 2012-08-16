@@ -25,8 +25,8 @@
 #define PREFIX_ARRAY_SIZE   3 * MB_LENGTH
 
 #define ORIGINAL_LINE_LEN   2048
-#define DEFAULT_WEIGHT_ARRAY_SIZE   1024
-#define LOG_BUF_LEN         1024 * 3
+#define DEFAULT_WEIGHT_ARRAY_SIZE   1024 * 2
+#define LOG_BUF_LEN         1024 * 10
 
 typedef struct _weight_item_t
 {
