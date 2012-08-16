@@ -54,12 +54,6 @@ typedef struct _output_fp_t
     FILE *dict_fp;
 } output_fp_t;
 
-typedef struct _brief_info_t
-{
-    char *brief;
-} brief_info_t;
-
-
 typedef struct _prefix_array_t
 {
     short count;

@@ -6,7 +6,6 @@
 config_t      gconfig;
 
 hash_list_ext_t *hash_table  = NULL;
-brief_info_t    *brief_table = NULL;
 output_fp_t     output_fp;
 
 char g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
@@ -72,30 +71,6 @@ static int init_hash_table(void)
 FINISH:
     return ret;
 }
-
-/**
-static int init_brief_table(void)
-{
-    int ret = 0;
-    size_t i = 0;
-    size_t size = sizeof(brief_info_t) * gconfig.max_dict_table_size;
-
-    brief_table = (brief_info_t *)malloc(size);
-    if (NULL == brief_table)
-    {
-        fprintf(stderr, "Can NOT malloc memory for brief_table, need size: %ld\n", size);
-        ret = -1;
-        goto FINISH;
-    }
-    for (i = 0; i < gconfig.max_dict_table_size; i++)
-    {
-        brief_table[0].brief = NULL;
-    }
-
-FINISH:
-    return ret;
-}
-*/
 
 static void usage(void)
 {
@@ -482,14 +457,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "init hash table fail, please check it out.\n");
         goto FINISH;
     }
-
-    /*
-    if (0 != init_brief_table())
-    {
-        fprintf(stderr, "init dict table fail, please check it out.\n");
-        goto FINISH;
-    }
-    */
 
     /** 初始化输出文件指针 */
     fp = fopen(gconfig.inverted_index, "w");
