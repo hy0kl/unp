@@ -40,7 +40,7 @@
 /** about index query */
 #define SINGLE_INDEX_SIZE   20
 #define MAX_HASH_TABLE_SIZE 49999
-#define MAX_DICT_TABLE_SIZE 32
+#define MAX_DICT_TABLE_SIZE 10000
 #define SEARCH_BUF_SIZE     64
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
