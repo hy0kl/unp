@@ -9,7 +9,8 @@ CONTRIB_PATH = ../contrib/hz2py
 
 INCLUDEDIR = \
 		-I$(CONTRIB_PATH)
-LIBDIR = -levent
+LIBDIR = \
+		-levent
 
 GCC = gcc
 GCCFLAGS = -g -finline-functions -Wall -Winline -pipe
@@ -20,7 +21,7 @@ BUILD  = build
 
 OBJS1  = event-http.o util.o
 OBJS2  = hash.o util.o
-OBJS3  = build.o util.o
+OBJS3  = build.o util.o pinyin.o utf8vector.o
 
 all : $(TARGET) $(TOOL) $(BUILD)
 	@echo "Start compile all"
@@ -39,7 +40,7 @@ $(BUILD) : $(OBJS3)
 	$(GCC) -g -o $@ $^ $(LIBDIR)
 
 %.o : %.c
-	$(GCC) $(GCCFLAGS) -c $< -o $@ $(INCLUDEDIR)
+	$(GCC) $(GCCFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:

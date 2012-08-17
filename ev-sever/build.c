@@ -1,5 +1,7 @@
 #include "build.h"
 
+#define SNPRINTF_SIZE (buf_len - (p - src_buf))
+
 /**
  * global variables
  * */
@@ -11,6 +13,166 @@ output_fp_t     output_fp;
 char g_original_file[FILE_NAME_LEN] = DEFAULT_ORIGINAL_FILE;
 int  g_parse_completed = 0;
 /** END for global vars */
+void hz2py(const char *line,
+        int line_length,
+        int add_blank,
+        int polyphone_support,  /** 支持多音字 */
+        int first_letter_only,
+        int convert_double_char,
+        int show_tones,
+        char *src_buf,
+        const size_t buf_len)
+{
+    wchar_t uni_char;
+    wchar_t last_uni_char = 0;
+    const char *utf8;
+    int utf8_length;
+    char *p = NULL;
+
+    utf8vector line_vector = utf8vector_create(line, line_length);
+
+    assert(NULL != line);
+    assert(NULL != src_buf);
+    assert(buf_len > 0);
+
+    p = src_buf;
+
+    while((uni_char = utf8vector_next_unichar_with_raw(line_vector, &utf8, &utf8_length)) != '\0')
+    {
+        if (pinyin_ishanzi(uni_char))
+        {
+            const char **pinyins = NULL;
+            int print_count = 0;
+            int count = pinyin_get_pinyins_by_unicode(uni_char, &pinyins);
+            if (count == 0)
+            {
+                p += snprintf(p, SNPRINTF_SIZE, "%.*s", utf8_length, utf8);
+            }
+            else
+            {
+                char *tones = NULL;
+                int  i = 0;
+                if (show_tones)
+                    pinyin_get_tones_by_unicode(uni_char, &tones);
+
+                // add blank
+                if (add_blank && last_uni_char != 0 && !pinyin_ishanzi(last_uni_char)) printf(" ");
+
+                for (i = 0; i < count; i++)
+                {
+                    if (first_letter_only)
+                    {
+                        if (show_tones)
+                        {
+                            if (print_count > 0)
+                                printf("|");
+
+                            p += snprintf(p, SNPRINTF_SIZE, "%c", pinyins[i][0]);
+                            print_count ++;
+                        }
+                        else
+                        {
+                            int has_print = 0;
+                            char c = pinyins[i][0];
+                            int  j = 0;
+
+                            for (j = 0; j < i; j ++)
+                            {
+                                if (pinyins[j][0] == c)
+                                {
+                                    has_print = 1;
+                                    break;
+                                }
+                            }
+
+                            if (! has_print)
+                            {
+                                if (print_count > 0)
+                                    printf("|");
+                                p += snprintf(p, SNPRINTF_SIZE, "%c", pinyins[i][0]);
+                                print_count++;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (show_tones)
+                        {
+                            if (print_count > 0)
+                                    printf("|");
+                            p += snprintf(p, SNPRINTF_SIZE, "%s", pinyins[i]);
+                            print_count ++;
+                        }
+                        else
+                        {
+                            int has_print = 0;
+                            char *s = (char *)pinyins[i];
+                            int j = 0;
+                            for (j = 0; j < i; j ++)
+                            {
+                                if (strcmp(pinyins[j], s) == 0)
+                                {
+                                    has_print = 1;
+                                    break;
+                                }
+                            }
+
+                            if (!has_print)
+                            {
+                                if (print_count > 0)
+                                    p += snprintf(p, SNPRINTF_SIZE, "|");
+
+                                p += snprintf(p, SNPRINTF_SIZE, "%s", pinyins[i]);
+                                print_count ++;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
+                    if (show_tones)
+                        p += snprintf(p, SNPRINTF_SIZE, "%d", tones[i]);
+
+                    if (!polyphone_support)
+                        break;
+
+                }
+
+                if (add_blank)
+                    p += snprintf(p, SNPRINTF_SIZE, " ");
+
+                free(tones);
+            }
+            free(pinyins);
+        }
+        else
+        {
+            if (convert_double_char && uni_char > 65280 && uni_char < 65375)
+            {
+                p += snprintf(p, SNPRINTF_SIZE, "%c", uni_char - 65248);
+            }
+            else if (convert_double_char && uni_char == 12288)
+            {
+                p += snprintf(p, SNPRINTF_SIZE, "%c", 32);
+            }
+            else
+            {
+                p += snprintf(p, SNPRINTF_SIZE, "%.*s", utf8_length, utf8);
+            }
+        }
+        last_uni_char = uni_char;
+    }
+
+    utf8vector_free(line_vector);
+
+    return;
+}
 
 static void init_config(void)
 {
@@ -107,6 +269,11 @@ static int parse_task(void)
     char tmp_buf[ORIGINAL_LINE_LEN];
     char prefix[PREFIX_LEN];
     char log_buf[LOG_BUF_LEN];
+    /**
+     * 0: 全拼
+     * 1: 简拼
+     * */
+    char chinese_char_buf[2][ORIGINAL_LINE_LEN];
     char *p = NULL;
     char *find = NULL;
 
@@ -166,22 +333,21 @@ static int parse_task(void)
         //logprintf("every line: [%s]", line_buf);
 
         prefix_array.count = 0;
-        k = 0;
         str_len = strlen(tmp_buf);
-        for (i = 1; i <= MB_LENGTH
-                && i < str_len && k < PREFIX_ARRAY_SIZE; i++)
+        for (i = 1, k = prefix_array.count;
+             i <= MB_LENGTH && i < str_len && k < PREFIX_ARRAY_SIZE;
+             i++, k = prefix_array.count)
         {
             /** Cleared buffer */
             memset(prefix, 0, sizeof(prefix));
 
             strtolower(tmp_buf, str_len, DEFAULT_ENCODING);
             result = cut_str(tmp_buf, prefix, sizeof(prefix), DEFAULT_ENCODING, i, "");
-            if (! chinese_char_flag && result != i)
+            if (1 == i &&! chinese_char_flag && result != i)
             {
                 chinese_char_flag = 1;
             }
 
-            k = prefix_array.count;
             snprintf(prefix_array.prefix[k], PREFIX_LEN, "%s", prefix);
             prefix_array.count++;
 #if (_DEBUG)
@@ -199,7 +365,55 @@ static int parse_task(void)
         // TODO
         if (chinese_char_flag)
         {
-            ;
+            int j = 0;
+            int mp = 0; /** Metamorphosis */
+            int m = 0;
+            size_t sub_str_len = 0;
+            char *tp = NULL;
+            chinese_char_buf[0][0] = '\0';
+            chinese_char_buf[1][0] = '\0';
+            /** 汉语拼音全拼 */
+            /** hz2py(中文字串, 字串长度, 增加空格, 支持多音字,
+             *      简拼, 转双字节, 显示 tones,
+             *      目标缓冲区, 缓冲区长度)
+             * */
+            hz2py(tmp_buf, str_len, 0, 0,
+                  0, 0, 0,
+                  chinese_char_buf[0], ORIGINAL_LINE_LEN);
+            hz2py(tmp_buf, str_len, 0, 0,
+                  1, 0, 0,
+                  chinese_char_buf[1], ORIGINAL_LINE_LEN);
+            for (m = 0; m < 2; m++)
+            {
+#if (_DEBUG)
+                logprintf("*** 中文词:   [%s]", tmp_buf);
+                logprintf("*** 中文%s: [%s]"  , m ? "简拼" : "全拼", chinese_char_buf[m]);
+#endif
+                mp = m;
+                sub_str_len = strlen(chinese_char_buf[m]);
+                tp = chinese_char_buf[m];
+                j = sub_str_len > MB_LENGTH ? MB_LENGTH : sub_str_len;
+                for (k = prefix_array.count;
+                     j > 0 && k < PREFIX_ARRAY_SIZE;
+                     j--, k = prefix_array.count)
+                {
+                    /** 全拼与简拼的第一个字母一样,不用重复 */
+                    if (mp && 2 == j)
+                    {
+                        break;
+                    }
+
+                    tp = chinese_char_buf[m] + j;
+                    *tp = '\0';
+
+                    snprintf(prefix_array.prefix[k], PREFIX_LEN, "%s", chinese_char_buf[m]);
+                    prefix_array.count++;
+#if (_DEBUG)
+                logprintf("prefix_array.prefix[%d] = %s",
+                    (int)k, prefix_array.prefix[k]);
+#endif
+                }
+            }
         }
 
         /** find weight */

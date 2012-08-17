@@ -2,7 +2,8 @@
 #define _BUILD_H_
 
 #include "util.h"
-#include "pinyin_data.h"
+#include "utf8vector.h"
+#include "pinyin.h"
 
 #define BUILD_PACKAGE   "build-worker"
 #define BUILD_VERSION   "1.0"
