@@ -945,6 +945,8 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
+    fprintf(stderr, "Init is OK, it will work for you. ^_*\n");
+
     /** 初始化事件 */
     event_init();
     /** 初始化监听ip和端口 */
