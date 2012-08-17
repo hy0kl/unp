@@ -391,6 +391,19 @@ static int build(void)
     return ret;
 }
 
+static void print_gconfig(void)
+{
+    fprintf(stderr, BUILD_PACKAGE " " BUILD_VERSION "\n");
+    fprintf(stderr, "---gconfig---\n");
+    fprintf(stderr, "hash_table_size: %lu\n", gconfig.max_hash_table_size);
+    fprintf(stderr, "original file:       [%s]\n", g_original_file);
+    fprintf(stderr, "inverted index file: [%s]\n", gconfig.inverted_index);
+    fprintf(stderr, "index dict file:     [%s]\n", gconfig.index_dict);
+    fprintf(stderr, "---end for gconfig---\n");
+
+    return;
+}
+
 int main(int argc, char *argv[])
 {
     int c;
@@ -462,12 +475,7 @@ int main(int argc, char *argv[])
         }
     }
 
-#if (_DEBUG)
-    logprintf("original file: [%s]", g_original_file);
-    logprintf("inverted index file: [%s]", gconfig.inverted_index);
-    logprintf("index dict file: [%s]", gconfig.index_dict);
-    logprintf("hash_table_size: %lu", gconfig.max_hash_table_size);
-#endif
+    print_gconfig();
 
     if (0 != init_hash_table())
     {
@@ -493,6 +501,9 @@ int main(int argc, char *argv[])
         exit(-11);
     }
     output_fp.dict_fp = fp;
+
+    /** print feedback info */
+    fprintf(stderr, "< Init is OK, I will work. >\n");
 
     if (0 != parse_task())
     {
