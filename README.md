@@ -16,7 +16,6 @@ The usage of simple suggestion system by prefix index
 -----
     git clone git://github.com/hy0kl/unp.git
     cd unp/ev-sever
-    vi auto.sh #change the work_path for your system.
     ./control.sh make
     ./control.sh build
     ./control.sh start
@@ -28,6 +27,7 @@ History
     2012.07.27 finish one demo version.
     2012.08.03 通过开拉链,解决了 hash 碰撞的问题
     2012.08.06 加入第三方模块,以实现汉字转全拼音和简拼功能
+    2012.08.17 Program using C language to build the index.
 
 Thanks
 ------
