@@ -276,6 +276,7 @@ static int parse_task(void)
     char chinese_char_buf[2][ORIGINAL_LINE_LEN];
     char *p = NULL;
     char *find = NULL;
+    char query[QUERY_LEN];
 
     FILE *fp = NULL;
     int   i  = 0;
@@ -321,6 +322,7 @@ static int parse_task(void)
         dict_id++;
         chinese_char_flag = 0;
         weight = 0.0;
+        query[0] = '\0';
 
         /** find query */
         p    = tmp_buf;
@@ -334,6 +336,8 @@ static int parse_task(void)
 
         prefix_array.count = 0;
         str_len = strlen(tmp_buf);
+        /** 记录下原始 query */
+        snprintf(query, QUERY_LEN, "%s", tmp_buf);
         for (i = 1, k = prefix_array.count;
              i <= MB_LENGTH && i < str_len && k < PREFIX_ARRAY_SIZE;
              i++, k = prefix_array.count)
@@ -341,8 +345,8 @@ static int parse_task(void)
             /** Cleared buffer */
             memset(prefix, 0, sizeof(prefix));
 
-            strtolower(tmp_buf, str_len, DEFAULT_ENCODING);
-            result = cut_str(tmp_buf, prefix, sizeof(prefix), DEFAULT_ENCODING, i, "");
+            strtolower(query, str_len, DEFAULT_ENCODING);
+            result = cut_str(query, prefix, sizeof(prefix), DEFAULT_ENCODING, i, "");
             if (1 == i &&! chinese_char_flag && result != i)
             {
                 chinese_char_flag = 1;
@@ -362,7 +366,8 @@ static int parse_task(void)
         }
 
         /** 全拼和简拼 */
-        // TODO
+        chinese_char_buf[0][0] = '\0';
+        chinese_char_buf[1][0] = '\0';
         if (chinese_char_flag)
         {
             int j = 0;
@@ -370,23 +375,21 @@ static int parse_task(void)
             int m = 0;
             size_t sub_str_len = 0;
             char *tp = NULL;
-            chinese_char_buf[0][0] = '\0';
-            chinese_char_buf[1][0] = '\0';
             /** 汉语拼音全拼 */
             /** hz2py(中文字串, 字串长度, 增加空格, 支持多音字,
              *      简拼, 转双字节, 显示 tones,
              *      目标缓冲区, 缓冲区长度)
              * */
-            hz2py(tmp_buf, str_len, 0, 0,
+            hz2py(query, str_len, 0, 0,
                   0, 0, 0,
                   chinese_char_buf[0], ORIGINAL_LINE_LEN);
-            hz2py(tmp_buf, str_len, 0, 0,
+            hz2py(query, str_len, 0, 0,
                   1, 0, 0,
                   chinese_char_buf[1], ORIGINAL_LINE_LEN);
             for (m = 0; m < 2; m++)
             {
 #if (_DEBUG)
-                logprintf("*** 中文词:   [%s]", tmp_buf);
+                logprintf("*** 中文词:   [%s]", query);
                 logprintf("*** 中文%s: [%s]"  , m ? "简拼" : "全拼", chinese_char_buf[m]);
 #endif
                 mp = m;
@@ -427,6 +430,8 @@ static int parse_task(void)
         logprintf("weight: %f, dict_id: %lu, prefix_array.count: %d",
             weight, dict_id, prefix_array.count);
 #endif
+        /** brief info */
+        find = p + 1;
 
         /** 建索引 */
         for (i = 0; i < prefix_array.count; i++)
@@ -551,7 +556,9 @@ static int parse_task(void)
         }
 
         /** write dict data */
-        snprintf(log_buf, LOG_BUF_LEN, "%lu\t%s", dict_id, line_buf);
+        snprintf(log_buf, LOG_BUF_LEN, "%lu\t%s\t%s\t%s\t%f\t%s",
+            dict_id, query, chinese_char_buf[0], chinese_char_buf[1],
+            weight, find);
         size = fwrite(log_buf, sizeof(char), strlen(log_buf), output_fp.dict_fp);
     }
 

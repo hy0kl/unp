@@ -6,7 +6,7 @@
 #define FORMAT_HTML "html"
 #define FORMAT_JSON "json"
 
-#define _DEBUG  0
+#define _DEBUG  1
 #define DAEMON  1
 
 #define DEFAULT_LINK_LENGTH 1024
@@ -30,6 +30,7 @@
 
 #define HOST_NAME_LEN   32
 #define FILE_NAME_LEN   128
+#define QUERY_EXT_SIZE  3
 
 /** output format */
 #define OUTPUT_AS_HTML 0
@@ -79,18 +80,37 @@ typedef struct _hash_list_t
     struct _hash_list_t *next;
 } hash_list_t;
 
+typedef struct _query_ext_t
+{
+    short count;
+    /**
+     * 最多为 3 组数据
+     * 0: 原始 query 词
+     * 1: 全拼
+     * 2: 简拼
+     * */
+    char **queries;
+} query_ext_t;
+
 /** 正排表单条数据 */
 typedef struct _index_dict_t
 {
     /** use malloc() */
-    char *query;
+    query_ext_t *query_ext;
     char *brief;
 } index_dict_t;
 
+typedef struct _dict_ext_t
+{
+    /** use malloc() */
+    char *query;
+    char *brief;
+} dict_ext_t;
+
 typedef struct _work_buf_t
 {
-    size_t        array_count;  /** count(dict_data) */
-    index_dict_t *dict_data;
+    size_t       array_count;  /** count(dict_data) */
+    dict_ext_t  *dict_data;
 } work_buf_t;
 
 typedef struct _search_buf_t

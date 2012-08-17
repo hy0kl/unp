@@ -15,6 +15,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
 {
     int ret  = 0;
     size_t i = 0;
+    int k = 0;
 
     indext_t hash_key = 0;
     indext_t dict_id  = 0;
@@ -48,12 +49,21 @@ static int search_process(const char *word, work_buf_t *work_buf)
         i = 0;
         dict_id = hash_item->index_item->index_chain[i] - 1;
         snprintf(lower_dict_query, QUERY_LEN, "%s",
-            index_dict_table[dict_id].query);
+            index_dict_table[dict_id].query_ext->queries[0]);
         strtolower(lower_dict_query, QUERY_LEN, "utf-8");
         if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
         {
             count = hash_item->index_item->size;
             goto FOUND;
+        }
+
+        for (k = 1; k < index_dict_table[dict_id].query_ext->count; k++)
+        {
+            if ((unsigned char)lower_query[0] == (unsigned char)index_dict_table[dict_id].query_ext->queries[k][0])
+            {
+                count = hash_item->index_item->size;
+                goto FOUND;
+            }
         }
 
         hash_item = hash_item->next;
@@ -73,7 +83,7 @@ FOUND:
     for (i = 0; i < count; i++)
     {
         dict_id = hash_item->index_item->index_chain[i] - 1;
-        snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s", index_dict_table[dict_id].query);
+        snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s", index_dict_table[dict_id].query_ext->queries[0]);
         snprintf(work_buf->dict_data[i].brief, BRIEF_LEN, "%s", index_dict_table[dict_id].brief);
     }
 
@@ -354,7 +364,8 @@ static void usage(void)
 
 static int load_index(void)
 {
-    int   ret = 0;
+    int   ret= 0;
+    int   k  = 0;
     FILE *fp = NULL;
     char *file_name = NULL;
     char  line[READ_LINE_BUF_LEN] = {0};
@@ -367,7 +378,8 @@ static int load_index(void)
     size_t array_index = 0;
     size_t size = 0;
 
-    char query[QUERY_LEN] = {0};
+    int queries_num = 0;
+    char queries[QUERY_EXT_SIZE][QUERY_LEN];
     char brief[BRIEF_LEN] = {0};
 
     hash_list_t *hash_item     = NULL;
@@ -511,12 +523,14 @@ static int load_index(void)
         line[READ_LINE_BUF_LEN - 1] = '\0';
         //logprintf("every line: %s", line);
         p = line;
+        find = line;
 
         find = strstr(p, SEPARATOR);
-        if (find)
+        if (NULL == find)
         {
-            *find = '\0';
+            continue;
         }
+        *find = '\0';
         array_index = (size_t)atoll(p);
 #if (_DEBUG)
         logprintf("array_index: %lu", array_index);
@@ -536,15 +550,64 @@ static int load_index(void)
         /** hash key 和字典序差 1,为了使数组下标从 0 开始而考虑 */
         array_index -= 1;
 
-        p = find + 1;
-        find = strstr(p, SEPARATOR);
-        if (NULL == find)
+        /** 处理 query, 包含有全拼和简拼 { */
+        queries_num = 0;
+        for (k = 0; k < QUERY_EXT_SIZE; k++)
         {
-            continue;
+            p = find + 1;
+            find = strstr(p, SEPARATOR);
+            if (NULL == find)
+            {
+                ret = -1;
+                goto LOAD_ERROR;
+            }
+            *find = '\0';
+
+            if (strlen(p))
+            {
+                queries_num++;
+                snprintf(queries[k], QUERY_LEN, "%s", p);
+            }
         }
-        *find = '\0';
-        snprintf(query, QUERY_LEN, "%s", p);
-        //logprintf("every query: [%s]", query);
+        if (0 == queries_num)
+        {
+            ret = -1;
+            goto LOAD_ERROR;
+        }
+        size = sizeof(query_ext_t);
+        index_dict_table[array_index].query_ext= (query_ext_t *)malloc(size);
+        if (NULL == index_dict_table[array_index].query_ext)
+        {
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query_ext, need size: %ld\n",
+                array_index, size);
+            ret = -1;
+            goto LOAD_ERROR;
+        }
+        index_dict_table[array_index].query_ext->count = queries_num;
+        size = sizeof(char *) * queries_num;
+        index_dict_table[array_index].query_ext->queries = (char **)malloc(size);
+        if (NULL == index_dict_table[array_index].query_ext->queries)
+        {
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query_ext->queries, need size: %ld\n",
+                array_index, size);
+            ret = -1;
+            goto LOAD_ERROR;
+        }
+        for (k = 0; k < queries_num; k++)
+        {
+            size = strlen(queries[k]) + 1;
+            index_dict_table[array_index].query_ext->queries[k] = (char *)malloc(size);
+            if (NULL == index_dict_table[array_index].query_ext->queries[k])
+            {
+                fprintf(stderr, "Can NOT malloc memory for index_\
+dict_table[%lu].query_ext->queries[%d], need size: %ld\n",
+                    array_index, k, size);
+                ret = -1;
+                goto LOAD_ERROR;
+            }
+            snprintf(index_dict_table[array_index].query_ext->queries[k], size, "%s", queries[k]);
+        }
+        /** end } */
 
         /** skip hot field */
         p = find + 1;
@@ -564,17 +627,6 @@ static int load_index(void)
         snprintf(brief, BRIEF_LEN, "%s", p);
         //logprintf("every brief: [%s]", p);
 
-        size = strlen(query) + 1;
-        index_dict_table[array_index].query = (char *)malloc(size);
-        if (NULL == index_dict_table[array_index].query)
-        {
-            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query, need size: %ld\n",
-                array_index, size);
-            ret = -1;
-            goto LOAD_ERROR;
-        }
-        snprintf(index_dict_table[array_index].query, size, "%s", query);
-
         size = strlen(brief) + 1;
         index_dict_table[array_index].brief = (char *)malloc(size);
         if (NULL == index_dict_table[array_index].brief)
@@ -586,7 +638,7 @@ static int load_index(void)
         }
         snprintf(index_dict_table[array_index].brief, size, "%s", brief);
 #if (_DEBUG)
-        logprintf("index_dict_table[%lu].query = %s", array_index, query);
+        logprintf("index_dict_table[%lu].query = %s", array_index, queries[0]);
         logprintf("index_dict_table[%lu].brief = %s", array_index, brief);
 #endif
     }
@@ -672,7 +724,7 @@ static int init_search_library(void)
             goto FINISH;
         }
         */
-        index_dict_table[i].query = NULL;
+        index_dict_table[i].query_ext = NULL;
 
         /**
         size = sizeof(char) * BRIEF_LEN;
@@ -707,10 +759,10 @@ static int init_search_library(void)
         ret = -1;
         goto FINISH;
     }
-    size = sizeof(index_dict_t) * SINGLE_INDEX_SIZE;
+    size = sizeof(dict_ext_t) * SINGLE_INDEX_SIZE;
     for (i = 0; i < gconfig.search_buf_size; i++)
     {
-        search_buf.work_buf[i].dict_data = (index_dict_t *)malloc(size);
+        search_buf.work_buf[i].dict_data = (dict_ext_t *)malloc(size);
         if (NULL == search_buf.work_buf[i].dict_data)
         {
             fprintf(stderr, "Can NOT malloc memory for search_buf.work_buf_t[%d].dict_data, need size: %ld\n",
