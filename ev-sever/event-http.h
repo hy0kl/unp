@@ -1,7 +1,7 @@
 #include "ev_sever.h"
 
 #define PACKAGE "libevent-http-server"
-#define VERSION "1.0"
+#define VERSION "0.1.0"
 #define CRLF    "<br />"
 #define FORMAT_HTML "html"
 #define FORMAT_JSON "json"

@@ -6,7 +6,7 @@
 #include "pinyin.h"
 
 #define BUILD_PACKAGE   "build-worker"
-#define BUILD_VERSION   "1.0"
+#define BUILD_VERSION   "0.1.0"
 
 #define DEFAULT_ORIGINAL_FILE   "./data/original"
 
