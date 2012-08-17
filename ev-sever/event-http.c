@@ -19,6 +19,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
     indext_t hash_key = 0;
     indext_t dict_id  = 0;
     size_t count      = 0;
+
     char lower_query[QUERY_LEN];
     char lower_dict_query[QUERY_LEN];
 

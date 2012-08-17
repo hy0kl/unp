@@ -45,6 +45,11 @@ static int init_hash_table(void)
     {
         hash_table[i].next = NULL;
 
+        /**
+         * 考虑到内存使用率,采用变长
+         * 真正有数据拷贝时才申请刚好容纳数据的空间
+         * */
+        /**
         size = sizeof(char) * QUERY_LEN;
         hash_table[i].prefix = (char *)malloc(size);
         if (NULL == hash_table[i].prefix)
@@ -55,6 +60,8 @@ static int init_hash_table(void)
             goto FINISH;
         }
         hash_table[i].prefix[0] = '\0';
+        */
+        hash_table[i].prefix = NULL;
 
         size = sizeof(weight_array_t);
         hash_table[i].weight_array = (weight_array_t *)malloc(size);
@@ -120,6 +127,11 @@ static int parse_task(void)
 
     indext_t dict_id   = 0;
     indext_t hash_key  = 0;
+
+    /**
+     * 以空间换时间
+     * 在栈上开辟,全程复用
+     * */
     prefix_array_t prefix_array;
 
     fp = fopen(g_original_file, "r");
@@ -216,12 +228,22 @@ static int parse_task(void)
 
             hash_exist = 0;
             hash_item = &(hash_table[hash_key]);
-            if (hash_item && '\0' == hash_item->prefix[0])
+            /** list head */
+            if (hash_item && NULL == hash_item->prefix)
             {
+                size = strlen(prefix_array.prefix[i]) + 1;
+                hash_item->prefix = (char *)malloc(size);
+                if (NULL == hash_item->prefix)
+                {
+                    fprintf(stderr, "Can NOT malloc memory for hash_item->prefix: [%s], need size: %lu\n",
+                        prefix_array.prefix[i], size);
+                    ret = -1;
+                    goto FATAL_ERROR;
+                }
                 hash_item->weight_array->weight_item[0].weight  = weight;
                 hash_item->weight_array->weight_item[0].dict_id = dict_id;
                 hash_item->weight_array->count = 1;
-                snprintf(hash_item->prefix, QUERY_LEN, "%s", prefix_array.prefix[i]);
+                snprintf(hash_item->prefix, size, "%s", prefix_array.prefix[i]);
 
                 continue;
             }
@@ -242,7 +264,10 @@ static int parse_task(void)
                 }
                 hash_item = hash_item->next;
             }
-            /** 如果 hash_key 存在,则将 dict_id 和 weight 写入, 并直接进入下一轮 */
+            /**
+             * 如果 hash_key 存在,则无需分配内存
+             * 将 dict_id 和 weight 追加写入, 并直接进入下一轮
+             * */
             if (hash_exist)
             {
 #if (_DEBUG)
@@ -263,6 +288,7 @@ static int parse_task(void)
 #if (_DEBUG)
                 logprintf("---- at create new memory ---");
 #endif
+                /** get list tail */
                 hash_item = &(hash_table[hash_key]);
                 while (hash_item->next)
                 {
@@ -278,16 +304,19 @@ static int parse_task(void)
                     ret = -1;
                     goto FATAL_ERROR;
                 }
+                tmp_hash_item->next = NULL;
 
-                size = sizeof(char) * QUERY_LEN;
+                /** 按需分配与使用 */
+                size = strlen(prefix_array.prefix[i]) + 1;
                 tmp_hash_item->prefix = (char *)malloc(size);
                 if (NULL == tmp_hash_item->prefix)
                 {
-                    fprintf(stderr, "Can NOT malloc memory for tmp_hash_item->prefix, need size: %ld\n",
-                        size);
+                    fprintf(stderr, "Can NOT malloc memory for tmp hash_item->prefix: [%s], need size: %lu\n",
+                        prefix_array.prefix[i], size);
                     ret = -1;
                     goto FATAL_ERROR;
                 }
+                snprintf(tmp_hash_item->prefix, size, "%s", prefix_array.prefix[i]);
 
                 size = sizeof(weight_array_t) * DEFAULT_WEIGHT_ARRAY_SIZE;
                 tmp_hash_item->weight_array = (weight_array_t *)malloc(size);
@@ -300,8 +329,6 @@ static int parse_task(void)
                 }
 
                 /** 新申请内存初始化 */
-                tmp_hash_item->next = NULL;
-                snprintf(tmp_hash_item->prefix, QUERY_LEN, "%s", prefix_array.prefix[i]);
                 tmp_hash_item->weight_array->count = 1;
                 tmp_hash_item->weight_array->weight_item[0].dict_id = dict_id;
                 tmp_hash_item->weight_array->weight_item[0].weight  = weight;
