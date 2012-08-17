@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -x
 ### please fix next line for your system  ###
-abs_path="$HOME/Study/unp"
+abs_path=$(dirname $(pwd))
 ### !!! ###
 
 # global vars
@@ -19,7 +19,7 @@ hz2py="${contrib_path}/hz2py"
 # 1 亿内最大的素数
 #prime_number=99999989
 prime_number=999983
-dict_number=80000
+dict_number=100000
 
 Usage="$0 <runtype:start|stop|make|build|hash|pretreat>"
 if [ $# -lt 1 ];
