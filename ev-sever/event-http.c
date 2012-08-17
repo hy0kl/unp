@@ -559,14 +559,34 @@ static int load_index(void)
         snprintf(brief, BRIEF_LEN, "%s", p);
         //logprintf("every brief: [%s]", p);
 
-        snprintf(index_dict_table[array_index].query, QUERY_LEN, "%s", query);
-        snprintf(index_dict_table[array_index].brief, BRIEF_LEN, "%s", brief);
+        size = strlen(query) + 1;
+        index_dict_table[array_index].query = (char *)malloc(size);
+        if (NULL == index_dict_table[array_index].query)
+        {
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query, need size: %ld\n",
+                array_index, size);
+            ret = -1;
+            goto LOAD_ERROR;
+        }
+        snprintf(index_dict_table[array_index].query, size, "%s", query);
+
+        size = strlen(brief) + 1;
+        index_dict_table[array_index].brief = (char *)malloc(size);
+        if (NULL == index_dict_table[array_index].brief)
+        {
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].brief, need size: %ld\n",
+                array_index, size);
+            ret = -1;
+            goto LOAD_ERROR;
+        }
+        snprintf(index_dict_table[array_index].brief, size, "%s", brief);
 #if (_DEBUG)
         logprintf("index_dict_table[%lu].query = %s", array_index, query);
         logprintf("index_dict_table[%lu].brief = %s", array_index, brief);
 #endif
     }
 
+LOAD_ERROR:
     fclose(fp);
     /** end of for dict }*/
 FINISH:
@@ -594,7 +614,6 @@ static int init_search_library(void)
         ret = -1;
         goto FINISH;
     }
-    //memset(index_hash_table, 0, gconfig.max_hash_table_size);
     for (i = 0; i < gconfig.max_hash_table_size; i++)
     {
         index_hash_table[i].next = NULL;
@@ -608,7 +627,6 @@ static int init_search_library(void)
             ret = -1;
             goto FINISH;
         }
-
 
         size = sizeof(indext_t) * SINGLE_INDEX_SIZE;
         index_hash_table[i].index_item->index_chain = (indext_t *)malloc(size);
@@ -634,6 +652,11 @@ static int init_search_library(void)
     }
     for (i = 0; i < gconfig.max_dict_table_size; i++)
     {
+        /**
+         * 为了有效使用内存, query 和 brief 采用不定长方式,
+         * 所以在真正需要拷贝数据时才申请刚好容纳下 brief 的空间
+         * 每个 query 和 brief 占用内存是固定的 */
+        /**
         size = sizeof(char) * QUERY_LEN;
         index_dict_table[i].query = (char *)malloc(size);
         if (NULL == index_dict_table[i].query)
@@ -643,7 +666,10 @@ static int init_search_library(void)
             ret = -1;
             goto FINISH;
         }
+        */
+        index_dict_table[i].query = NULL;
 
+        /**
         size = sizeof(char) * BRIEF_LEN;
         index_dict_table[i].brief = (char *)malloc(size);
         if (NULL == index_dict_table[i].brief)
@@ -653,6 +679,8 @@ static int init_search_library(void)
             ret = -1;
             goto FINISH;
         }
+        */
+        index_dict_table[i].brief = NULL;
     }
 
     /**
