@@ -28,6 +28,7 @@ History
     2012.08.03 通过开拉链,解决了 hash 碰撞的问题
     2012.08.06 加入第三方模块,以实现汉字转全拼音和简拼功能
     2012.08.17 Program using C language to build the index.
+    2012.08.18 Released the first version to support the Chinese Hanyu Pinyin retrieval, version: 0.1.0.
 
 Thanks
 ------
