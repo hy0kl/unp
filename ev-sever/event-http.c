@@ -776,6 +776,7 @@ FINISH:
 
 static void print_gconfig(void)
 {
+    fprintf(stderr, "---gconfig---\n");
     fprintf(stderr, "gconfig.do_daemonize = %d\n", gconfig.do_daemonize);
     fprintf(stderr, "gconfig.port         = %d\n", gconfig.port);
     fprintf(stderr, "gconfig.timeout      = %d\n", gconfig.timeout);
@@ -783,9 +784,10 @@ static void print_gconfig(void)
     fprintf(stderr, "gconfig.max_hash_table_size = %lu\n", gconfig.max_hash_table_size);
     fprintf(stderr, "gconfig.max_dict_table_size = %lu\n", gconfig.max_dict_table_size);
     fprintf(stderr, "gconfig.search_buf_size     = %lu\n", gconfig.search_buf_size);
-    fprintf(stderr, "gconfig.hostname: [%s]\n",       gconfig.hostname);
+    fprintf(stderr, "gconfig.hostname:       [%s]\n", gconfig.hostname);
     fprintf(stderr, "gconfig.inverted_index: [%s]\n", gconfig.inverted_index);
-    fprintf(stderr, "config.index_dict: [%s]\n",      gconfig.index_dict);
+    fprintf(stderr, "gconfig.index_dict:     [%s]\n", gconfig.index_dict);
+    fprintf(stderr, "---end gconfig---\n");
 
     return;
 }
