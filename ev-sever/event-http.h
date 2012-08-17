@@ -6,7 +6,7 @@
 #define FORMAT_HTML "html"
 #define FORMAT_JSON "json"
 
-#define _DEBUG  1
+#define _DEBUG  0
 #define DAEMON  1
 
 #define DEFAULT_LINK_LENGTH 1024
