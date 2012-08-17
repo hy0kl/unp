@@ -583,7 +583,7 @@ static int build(void)
             continue;
         }
 
-        while (hash_item && NULL != hash_item->prefix)
+        while (hash_item && NULL != hash_item->prefix && hash_item->prefix[0])
         {
             p = log_buf;
             qsort(hash_item->weight_array->weight_item,
