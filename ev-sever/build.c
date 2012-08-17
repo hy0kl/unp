@@ -16,7 +16,6 @@ static void init_config(void)
 {
     gconfig.log_level    = 4;
     gconfig.max_hash_table_size = MAX_HASH_TABLE_SIZE;
-    gconfig.max_dict_table_size = MAX_DICT_TABLE_SIZE;
     snprintf(gconfig.hostname, HOST_NAME_LEN, "%s", DEFAULT_LISTEN);
     snprintf(gconfig.inverted_index, FILE_NAME_LEN, "%s", DEFAULT_INVERTED_INDEX);
     snprintf(gconfig.index_dict, FILE_NAME_LEN, "%s", DEFAULT_INDEX_DICT);
@@ -83,7 +82,6 @@ static void usage(void)
 {
     printf(BUILD_PACKAGE " " BUILD_VERSION "\n");
     printf("-s <num>      max hash table size(default: %d)\n", MAX_HASH_TABLE_SIZE);
-    printf("-a <num>      max dict table size(default: %d)\n", MAX_DICT_TABLE_SIZE);
     printf("-v            show version and help\n"
            "-l <level>    set log lever\n"
            "-o <file>     set original file name adn path, ABS path is better\n"
@@ -422,14 +420,6 @@ int main(int argc, char *argv[])
             if (size > 0 && size > MAX_HASH_TABLE_SIZE)
             {
                 gconfig.max_hash_table_size = size;
-            }
-            break;
-
-        case 'a':
-            size = (size_t)atoll(optarg);
-            if (size > 0 && size > MAX_DICT_TABLE_SIZE)
-            {
-                gconfig.max_dict_table_size = size;
             }
             break;
 
