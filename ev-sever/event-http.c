@@ -518,7 +518,9 @@ static int load_index(void)
             *find = '\0';
         }
         array_index = (size_t)atoll(p);
+#if (_DEBUG)
         logprintf("array_index: %lu", array_index);
+#endif
         /** @: Important fault-tolerant */
         if (! (array_index > 0))
         {
@@ -526,7 +528,9 @@ static int load_index(void)
         }
         else if (array_index > gconfig.max_dict_table_size)
         {
+#if (_DEBUG)
             logprintf("The dict number out of max dict tabel size: %lu", gconfig.max_dict_table_size);
+#endif
             break;
         }
         /** hash key 和字典序差 1,为了使数组下标从 0 开始而考虑 */
@@ -690,7 +694,9 @@ static int init_search_library(void)
      * 加锁则影响性能,开到足够大能降低概率,不能免除
      * 我的理解 ^_*
      * */
+#if (_DEBUG)
     logprintf("apply memory for search_buf.dict_data.");
+#endif
     search_buf.current   = 0;
     size = sizeof(work_buf_t) * gconfig.search_buf_size;
     search_buf.work_buf = (work_buf_t *)malloc(size);
@@ -739,7 +745,9 @@ search_buf.work_buf[%d].dict_data[%d].brief, need size: %lu\n",
         }
     }
 
+#if (_DEBUG)
     logprintf("apply memory for search_buf.tpl_buf.");
+#endif
     size = sizeof(char *) * gconfig.search_buf_size;
     search_buf.tpl_buf = (char **)malloc(size);
     if (NULL == search_buf.tpl_buf)
@@ -764,6 +772,22 @@ search_buf.work_buf[%d].dict_data[%d].brief, need size: %lu\n",
 
 FINISH:
     return ret;
+}
+
+static void print_gconfig(void)
+{
+    fprintf(stderr, "gconfig.do_daemonize = %d\n", gconfig.do_daemonize);
+    fprintf(stderr, "gconfig.port         = %d\n", gconfig.port);
+    fprintf(stderr, "gconfig.timeout      = %d\n", gconfig.timeout);
+    fprintf(stderr, "gconfig.log_level    = %d\n", gconfig.log_level);
+    fprintf(stderr, "gconfig.max_hash_table_size = %lu\n", gconfig.max_hash_table_size);
+    fprintf(stderr, "gconfig.max_dict_table_size = %lu\n", gconfig.max_dict_table_size);
+    fprintf(stderr, "gconfig.search_buf_size     = %lu\n", gconfig.search_buf_size);
+    fprintf(stderr, "gconfig.hostname: [%s]\n",       gconfig.hostname);
+    fprintf(stderr, "gconfig.inverted_index: [%s]\n", gconfig.inverted_index);
+    fprintf(stderr, "config.index_dict: [%s]\n",      gconfig.index_dict);
+
+    return;
 }
 
 int main(int argc, char** argv)
@@ -906,6 +930,8 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 #endif
+
+    print_gconfig();
 
     if (0 != init_search_library())
     {
