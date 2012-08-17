@@ -22,7 +22,7 @@
  * 3: 简拼
  * */
 #define MB_LENGTH   16
-#define PREFIX_LEN  32
+#define PREFIX_LEN  512
 #define PREFIX_ARRAY_SIZE   3 * MB_LENGTH
 
 #define ORIGINAL_LINE_LEN   2048

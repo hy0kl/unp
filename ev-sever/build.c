@@ -274,6 +274,7 @@ static int parse_task(void)
      * 1: 简拼
      * */
     char chinese_char_buf[2][ORIGINAL_LINE_LEN];
+    char cc_buf[ORIGINAL_LINE_LEN];
     char *p = NULL;
     char *find = NULL;
     char query[QUERY_LEN];
@@ -319,7 +320,6 @@ static int parse_task(void)
         line_buf[ORIGINAL_LINE_LEN - 1] = '\0';
         snprintf(tmp_buf, ORIGINAL_LINE_LEN, "%s", line_buf);
         // logprintf("every line: [%s]", line_buf);
-        dict_id++;
         chinese_char_flag = 0;
         weight = 0.0;
         query[0] = '\0';
@@ -334,10 +334,16 @@ static int parse_task(void)
         }
         //logprintf("every line: [%s]", line_buf);
 
-        prefix_array.count = 0;
         str_len = strlen(tmp_buf);
         /** 记录下原始 query */
+        if (0 == str_len)
+        {
+            fprintf(stderr, "*** Find empty query ***\n");
+            continue;
+        }
+        dict_id++;
         snprintf(query, QUERY_LEN, "%s", tmp_buf);
+        prefix_array.count = 0;
         for (i = 1, k = prefix_array.count;
              i <= MB_LENGTH && i < str_len && k < PREFIX_ARRAY_SIZE;
              i++, k = prefix_array.count)
@@ -394,22 +400,23 @@ static int parse_task(void)
 #endif
                 mp = m;
                 sub_str_len = strlen(chinese_char_buf[m]);
-                tp = chinese_char_buf[m];
+                snprintf(cc_buf, ORIGINAL_LINE_LEN, "%s", chinese_char_buf[m]);
+                tp = cc_buf;
                 j = sub_str_len > MB_LENGTH ? MB_LENGTH : sub_str_len;
                 for (k = prefix_array.count;
                      j > 0 && k < PREFIX_ARRAY_SIZE;
                      j--, k = prefix_array.count)
                 {
                     /** 全拼与简拼的第一个字母一样,不用重复 */
-                    if (mp && 2 == j)
+                    if (mp && 1 == j)
                     {
                         break;
                     }
 
-                    tp = chinese_char_buf[m] + j;
+                    tp = cc_buf + j;
                     *tp = '\0';
 
-                    snprintf(prefix_array.prefix[k], PREFIX_LEN, "%s", chinese_char_buf[m]);
+                    snprintf(prefix_array.prefix[k], PREFIX_LEN, "%s", cc_buf);
                     prefix_array.count++;
 #if (_DEBUG)
                 logprintf("prefix_array.prefix[%d] = %s",
@@ -461,6 +468,9 @@ static int parse_task(void)
                 hash_item->weight_array->weight_item[0].dict_id = dict_id;
                 hash_item->weight_array->count = 1;
                 snprintf(hash_item->prefix, size, "%s", prefix_array.prefix[i]);
+#if (_DEBUG)
+                logprintf("$$$ insert into hash table: [%s] i = %d", prefix_array.prefix[i], i);
+#endif
 
                 continue;
             }
@@ -552,6 +562,9 @@ static int parse_task(void)
 
                 hash_item->next = tmp_hash_item;
                 hash_item = tmp_hash_item;
+#if (_DEBUG)
+                logprintf("### insert into hash table [%s] i = %d", prefix_array.prefix[i], i);
+#endif
             }
         }
 
