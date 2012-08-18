@@ -756,6 +756,8 @@ FINISH:
     fclose(output_fp.inverted_fp);
     fclose(output_fp.dict_fp);
 
+    fprintf(stderr, "build index completed!.\n");
+
     return 0;
 }
 
