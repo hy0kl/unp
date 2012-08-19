@@ -49,7 +49,7 @@ static int search_process(const char *word, work_buf_t *work_buf)
         i = 0;
         dict_id = hash_item->index_item->index_chain[i] - 1;
         snprintf(lower_dict_query, QUERY_LEN, "%s",
-            index_dict_table[dict_id].query_ext->queries[0]);
+            index_dict_table[dict_id].dict_data->query_ext->queries[0]);
         strtolower(lower_dict_query, QUERY_LEN, "utf-8");
         if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
         {
@@ -57,9 +57,10 @@ static int search_process(const char *word, work_buf_t *work_buf)
             goto FOUND;
         }
 
-        for (k = 1; k < index_dict_table[dict_id].query_ext->count; k++)
+        for (k = 1; k < index_dict_table[dict_id].dict_data->query_ext->count; k++)
         {
-            if ((unsigned char)lower_query[0] == (unsigned char)index_dict_table[dict_id].query_ext->queries[k][0])
+            if ((unsigned char)lower_query[0] ==
+                    (unsigned char)index_dict_table[dict_id].dict_data->query_ext->queries[k][0])
             {
                 count = hash_item->index_item->size;
                 goto FOUND;
@@ -83,8 +84,10 @@ FOUND:
     for (i = 0; i < count; i++)
     {
         dict_id = hash_item->index_item->index_chain[i] - 1;
-        snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s", index_dict_table[dict_id].query_ext->queries[0]);
-        snprintf(work_buf->dict_data[i].brief, BRIEF_LEN, "%s", index_dict_table[dict_id].brief);
+        snprintf(work_buf->dict_data[i].query, QUERY_LEN, "%s",
+                index_dict_table[dict_id].dict_data->query_ext->queries[0]);
+        snprintf(work_buf->dict_data[i].brief, BRIEF_LEN, "%s",
+                index_dict_table[dict_id].dict_data->brief);
     }
 
 FINISH:
@@ -575,20 +578,21 @@ static int load_index(void)
             goto LOAD_ERROR;
         }
         size = sizeof(query_ext_t);
-        index_dict_table[array_index].query_ext= (query_ext_t *)malloc(size);
-        if (NULL == index_dict_table[array_index].query_ext)
+        index_dict_table[array_index].dict_data->query_ext= (query_ext_t *)malloc(size);
+        if (NULL == index_dict_table[array_index].dict_data->query_ext)
         {
-            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query_ext, need size: %ld\n",
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].dict_data->query_ext, need size: %ld\n",
                 array_index, size);
             ret = -1;
             goto LOAD_ERROR;
         }
-        index_dict_table[array_index].query_ext->count = queries_num;
+        index_dict_table[array_index].dict_data->query_ext->count = queries_num;
         size = sizeof(char *) * queries_num;
-        index_dict_table[array_index].query_ext->queries = (char **)malloc(size);
-        if (NULL == index_dict_table[array_index].query_ext->queries)
+        index_dict_table[array_index].dict_data->query_ext->queries = (char **)malloc(size);
+        if (NULL == index_dict_table[array_index].dict_data->query_ext->queries)
         {
-            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].query_ext->queries, need size: %ld\n",
+            fprintf(stderr, "Can NOT malloc memory for \
+index_dict_table[%lu].dict_data->query_ext->queries, need size: %ld\n",
                 array_index, size);
             ret = -1;
             goto LOAD_ERROR;
@@ -596,16 +600,16 @@ static int load_index(void)
         for (k = 0; k < queries_num; k++)
         {
             size = strlen(queries[k]) + 1;
-            index_dict_table[array_index].query_ext->queries[k] = (char *)malloc(size);
-            if (NULL == index_dict_table[array_index].query_ext->queries[k])
+            index_dict_table[array_index].dict_data->query_ext->queries[k] = (char *)malloc(size);
+            if (NULL == index_dict_table[array_index].dict_data->query_ext->queries[k])
             {
                 fprintf(stderr, "Can NOT malloc memory for index_\
-dict_table[%lu].query_ext->queries[%d], need size: %ld\n",
+dict_table[%lu].dict_data->query_ext->queries[%d], need size: %ld\n",
                     array_index, k, size);
                 ret = -1;
                 goto LOAD_ERROR;
             }
-            snprintf(index_dict_table[array_index].query_ext->queries[k], size, "%s", queries[k]);
+            snprintf(index_dict_table[array_index].dict_data->query_ext->queries[k], size, "%s", queries[k]);
         }
         /** end } */
 
@@ -628,15 +632,15 @@ dict_table[%lu].query_ext->queries[%d], need size: %ld\n",
         //logprintf("every brief: [%s]", p);
 
         size = strlen(brief) + 1;
-        index_dict_table[array_index].brief = (char *)malloc(size);
-        if (NULL == index_dict_table[array_index].brief)
+        index_dict_table[array_index].dict_data->brief = (char *)malloc(size);
+        if (NULL == index_dict_table[array_index].dict_data->brief)
         {
-            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].brief, need size: %ld\n",
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%lu].dict_data->brief, need size: %ld\n",
                 array_index, size);
             ret = -1;
             goto LOAD_ERROR;
         }
-        snprintf(index_dict_table[array_index].brief, size, "%s", brief);
+        snprintf(index_dict_table[array_index].dict_data->brief, size, "%s", brief);
 #if (_DEBUG)
         logprintf("index_dict_table[%lu].query = %s", array_index, queries[0]);
         logprintf("index_dict_table[%lu].brief = %s", array_index, brief);
@@ -724,7 +728,7 @@ static int init_search_library(void)
             goto FINISH;
         }
         */
-        index_dict_table[i].query_ext = NULL;
+        // index_dict_table[i].query_ext = NULL;
 
         /**
         size = sizeof(char) * BRIEF_LEN;
@@ -737,7 +741,19 @@ static int init_search_library(void)
             goto FINISH;
         }
         */
-        index_dict_table[i].brief = NULL;
+        // index_dict_table[i].brief = NULL;
+
+        size = sizeof(dict_data_t);
+        index_dict_table[i].dict_data = (dict_data_t *)malloc(size);
+        if (NULL == index_dict_table[i].dict_data)
+        {
+            fprintf(stderr, "Can NOT malloc memory for index_dict_table[%d].dict_data, need size: %ld\n",
+                i, size);
+            ret = -1;
+            goto FINISH;
+        }
+        index_dict_table[i].dict_data->brief     = NULL;
+        index_dict_table[i].dict_data->query_ext = NULL;
     }
 
     /**

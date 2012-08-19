@@ -69,7 +69,6 @@ typedef unsigned long int indext_t;
 typedef struct _index_item_t
 {
     short     size;   /** count(index_chain) */
-    //indext_t index_chain[SINGLE_INDEX_SIZE];  /** 单个索引链*/
     indext_t *index_chain;  /** 单个索引链,目前只取 TOP20 */
 } index_item_t;
 
@@ -92,12 +91,19 @@ typedef struct _query_ext_t
     char **queries;
 } query_ext_t;
 
+typedef struct _dict_data_t
+{
+    query_ext_t *query_ext;
+    char *brief;
+} dict_data_t;
+
 /** 正排表单条数据 */
 typedef struct _index_dict_t
 {
     /** use malloc() */
-    query_ext_t *query_ext;
-    char *brief;
+    // query_ext_t *query_ext;
+    // char *brief;
+    dict_data_t *dict_data;
 } index_dict_t;
 
 typedef struct _dict_ext_t
