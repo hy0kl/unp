@@ -1,17 +1,50 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
+
+static int prime(const int number)
+{
+    int sqrt_v = 0;
+    int ret = 0;
+    int k = 0;
+
+    assert(number >= 0);
+
+    if (number <= 3)
+    {
+        ret = 1;
+        goto FINISH;
+    }
+
+    sqrt_v = (int)ceil(sqrt(number));
+    for (k = 2; k <= sqrt_v; k++)
+    {
+        /*
+        printf("\n k = %d, number: %d, sqrt_v = %d, (%d %% %d) = %d\n",
+            k, number, sqrt_v, number, k, (number % k));
+        */
+        if (0 == (number % k))
+        {
+            ret = 0;
+            goto FINISH;
+        }
+    }
+
+    ret = 1;
+FINISH:
+    return ret;
+}
 
 int main(int argc, char *argv[])
 {
-    static const int MAX_HASH_NUM = (1ULL << 31) - 1;  /**< 最大Hash桶大小 */
-    int prime_number[] = {1, 2, 3, 5, 7, 9,
+    static const int MAX_HASH_NUM = (1ULL << 31) - 1;
+    int prime_number[] = {1, 2, 3, 5, 7,
                           11, 13, 17, 19, 23,
                           29, 31, 0};
     int i = 0;
     int k = 0;
     int count = 0;
-    int sqrt_v = 0;
     int fields_num = 15;
     int t_opt = 0;
     int max_num = 1000;
@@ -44,15 +77,11 @@ int main(int argc, char *argv[])
     }
 
     fprintf(stdout, "---prime number table---\n");
-    for (i = 0; i < max_num; i++)
+    for (i = 1; i < max_num; i++)
     {
-        sqrt_v = sqrt(i);
-        for (k = 2; k < sqrt_v; k++)
+        if (0 == prime(i))
         {
-            if (0 == (i % k))
-            {
-                goto NEXT_NUM;
-            }
+            continue;
         }
 
         fprintf(stdout, "%d\t", i);
@@ -62,10 +91,9 @@ int main(int argc, char *argv[])
             fprintf(stdout, "\n");
             count = 0;
         }
-NEXT_NUM:
-        ;
     }
     fprintf(stdout, "%s---end of prime---\n", count < fields_num ? "\n" : "");
 
     return 0;
 }
+
