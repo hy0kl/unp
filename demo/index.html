@@ -42,6 +42,10 @@ h3 {
     background-color: #659CD8;
 }
 
+.suggest_select {
+     background-color: #659CD8;
+}
+
 .notice {
     margin: 5px;
     padding: 5px;
@@ -73,23 +77,31 @@ h3 {
     </form>
 </div>
 </body>
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+<!-- script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script -->
+<script type="text/javascript" src="/statics/js/jquery-1.7.2.js"></script>
 <script type="text/javascript">
 var suggest = {};
+suggest.count = 0;
 var abc = function(json)
 {
+    suggest.count = 0;
     var html = [];
     var suggestions = $('#suggestions');
     if ('200' == json.stat && json.res_num - 0 > 0)
     {
+        suggest.count = json.res_num - 0;
         var html = []
         for (var i = 0; i < json.res_num - 0; i++)
         {
             var obj = json.result[i];
-            html.push('<li onClick="fill(\'' + obj.query + '\');">' + obj.query + '</li>');
+            html.push('<li node="' + i + '" query="' + obj.query + '" class="sug-query">' + obj.query + '</li>');
         }
         suggestions.show();
         $('#autoSuggestionsList').html(html.join(''));
+
+        setTimeout(function(){
+            suggest.keyboard_op();
+        }, 500);
     }
     else
     {
@@ -104,7 +116,7 @@ suggest.lookup = function (inputString)
         $('#suggestions').hide();
     } else {
         $('#c-sug').remove();
-        var api = 'http://60.28.202.26:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
+        var api = 'http://127.0.0.1:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
         var oHead = document.getElementsByTagName('HEAD').item(0);
         var oScript= document.createElement("script");
         oScript.type = "text/javascript";
@@ -121,7 +133,99 @@ suggest.fill = function(thisValue)
     setTimeout("$('#suggestions').hide();", 500);
 }
 
+suggest.keyboard_op = function()
+{
+    var obj = $('#inputString');
+    var op  = -1;
+    obj.unbind('click keydown').bind('keydown', function(ev){
+        /**
+          对于jquery 和yui等前端框架来说他们都有阻止默认事件的方法
+          在调用 window.location.href 等其他重定向方法之前阻止掉连接的默认事件
+         */
+        ev.preventDefault();
+        switch (ev.keyCode - 0)
+        {
+            case 38:
+                if (op > 0)
+                {
+                    op--;
+                }
+                suggest.set_sug_query(op);
+                return false;
+            case 40:
+                if (op < suggest.count - 1)
+                {
+                    op++;
+                }
+                suggest.set_sug_query(op);
+                return false;
+            case 13:
+                var arg = {'node': op};
+                suggest.submit_query(arg);
+                break;
+        }
+    });
+}
+
+suggest.set_sug_query = function(node)
+{
+    if (node - 0 < 0 || node - 0 > this.count)
+    {
+        return;
+    }
+
+    var obj = $('.sug-query');
+    var sug = $('#inputString');
+    obj.each(function(){
+        var sub_obj = $(this);
+        var index   = sub_obj.attr('node');
+        var query = sub_obj.attr('query');
+        sub_obj.removeClass('suggest_select');
+        if (node - 0 == index - 0)
+        {
+            sub_obj.addClass('suggest_select');
+            sug.attr('value', query);
+        }
+    });
+}
+
+suggest.submit_query = function(obj)
+{
+    var query = '';
+    if (obj && 'number' == typeof(obj.node))
+    {
+        $('.sug-query').each(function(){
+            var node = $(this).attr('node');
+           // alert('node = ' + node + ', obj.node = ' + obj.node);
+            if ((node - 0) === (obj.node - 0))
+            {
+                query = $(this).attr('query');
+                return;
+            }
+        });
+    }
+    else if (obj && obj.query)
+    {
+        query = obj.query;
+    }
+    else
+    {
+        query = $('#inputString').attr('value');
+    }
+
+    if (! query)
+    {
+        return;
+    }
+
+    var locat = '' + window.location;
+    var parse_url = locat.split("\?");
+    var url = parse_url[0] + '?query=' + query;
+    window.location.href = url;
+}
+
 $(document).ready(function(){
+    var sug = $('#inputString');
     var sug = $('#inputString');
     //sug.bind('keydown keypress', function(){
     sug.bind('input', function(){
