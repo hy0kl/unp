@@ -1,8 +1,8 @@
 /**
- *thread_example.c :  c multiple thread programming in linux
+ * c multiple thread programming in linux
  * author : Jerry Yang
  * E-mail : hy0kle@gmail.com
- * gcc -lpthread thread.c
+ * gcc -lpthread thread.c -o thread
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +11,9 @@
 #include <string.h>
 #include <unistd.h>
 
+/**
+ * 工作者线程线
+ * */
 #define MAX 16
 
 typedef struct _task_queue_t
