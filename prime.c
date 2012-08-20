@@ -3,6 +3,10 @@
 #include <math.h>
 #include <assert.h>
 
+/**
+ * gcc -o prime prime.c -lm
+ * */
+
 static int prime(const int number)
 {
     int sqrt_v = 0;
