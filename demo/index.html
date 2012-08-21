@@ -38,10 +38,6 @@ h3 {
     cursor: pointer;
 }
 
-.suggestionList li:hover {
-    background-color: #659CD8;
-}
-
 .suggest_select {
      background-color: #659CD8;
 }
@@ -77,8 +73,8 @@ h3 {
     </form>
 </div>
 </body>
-<!-- script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script -->
-<script type="text/javascript" src="/statics/js/jquery-1.7.2.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+<!-- script type="text/javascript" src="/statics/js/jquery-1.7.2.js"></script-->
 <script type="text/javascript">
 var suggest = {};
 suggest.count = 0;
@@ -116,7 +112,8 @@ suggest.lookup = function (inputString)
         $('#suggestions').hide();
     } else {
         $('#c-sug').remove();
-        var api = 'http://127.0.0.1:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
+        //var api = 'http://127.0.0.1:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
+        var api = 'http://60.28.202.26:8080/?format=json&callback=abc&word=' + inputString + '&p=' + (+(new Date()));
         var oHead = document.getElementsByTagName('HEAD').item(0);
         var oScript= document.createElement("script");
         oScript.type = "text/javascript";
