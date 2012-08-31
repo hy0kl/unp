@@ -436,7 +436,7 @@ int prefix_cmp(const char *prefix, const char *cmp_str)
     int i = 0;
     size_t prefix_len = strlen(prefix);
     size_t cmp_str_len= strlen(cmp_str);
-    size_t count = cmp_str_len
+    size_t count = cmp_str_len;
     size_t match = 0;
 
     if (cmp_str_len > prefix_len)

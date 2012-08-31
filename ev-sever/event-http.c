@@ -51,7 +51,8 @@ static int search_process(const char *word, work_buf_t *work_buf)
         snprintf(lower_dict_query, QUERY_LEN, "%s",
             index_dict_table[dict_id].dict_data->query_ext->queries[0]);
         strtolower(lower_dict_query, QUERY_LEN, "utf-8");
-        if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
+        //if ((unsigned char)lower_query[0] == (unsigned char)lower_dict_query[0])
+        if (prefix_cmp(lower_dict_query, lower_query))
         {
             count = hash_item->index_item->size;
             goto FOUND;

@@ -480,10 +480,9 @@ static int parse_task(void)
                 logprintf("hash_item->prefix:[%s] CMP prefix_array.data[%d] : [%s]",
                     hash_item->prefix, i, prefix_array.prefix[i]);
 #endif
-                if (hash_item->prefix[0]
-                        && ((u_char)hash_item->prefix[0] == (u_char)prefix_array.prefix[i][0]))
+                if (hash_item->prefix[0])
                 {
-                    hash_exist = 1;
+                    hash_exist = prefix_cmp(hash_item->prefix, prefix_array.prefix[i]);
 #if (_DEBUG)
                     logprintf("find exist prefix: [%s]", prefix_array.prefix[i]);
 #endif
