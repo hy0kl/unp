@@ -427,3 +427,36 @@ FINISH:
     return ret;
 }
 
+int prefix_cmp(const char *prefix, const char *cmp_str)
+{
+    assert(NULL != prefix);
+    assert(NULL != cmp_str);
+
+    int ret = 0;
+    int i = 0;
+    size_t prefix_len = strlen(prefix);
+    size_t cmp_str_len= strlen(cmp_str);
+    size_t count = cmp_str_len
+    size_t match = 0;
+
+    if (cmp_str_len > prefix_len)
+    {
+        goto FINISH;
+    }
+
+    for (i = 0; i < count; i++)
+    {
+        if ((u_char)prefix[i] == (u_char)cmp_str[i])
+        {
+            match++;
+        }
+    }
+
+    if (match && match == count)
+    {
+        ret = 1;
+    }
+
+FINISH:
+    return ret;
+}

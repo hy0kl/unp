@@ -40,5 +40,10 @@ int cut_str(const char *src,
             unsigned int length,
             const char *suffix);
 
+/**
+ * 前缀与查询词比对
+ * */
+int prefix_cmp(const char *prefix, const char *cmp_str);
+
 #endif
 
