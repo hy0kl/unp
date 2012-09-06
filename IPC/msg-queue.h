@@ -11,14 +11,22 @@
 #include <sys/file.h>
 
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE     512
+#define FILE_NAME_LEN   1024
 #define ALARMSERVERMSGFILE "/tmp/testMsg.msg"
 
-struct message
+typedef struct _message_t
 {
     long msg_type;
-    int  msg_text;
-    int  test;
+    int  msg_test;
     char msg_body[BUFFER_SIZE];
-};
+    //void (*call_back)(struct _message_t *msg);
+} message_t;
+
+void print_type(message_t *msg)
+{
+    printf("[Message type]: %ld\n", msg->msg_type);
+    return;
+}
+
 
