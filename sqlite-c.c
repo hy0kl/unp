@@ -77,7 +77,7 @@ Congratulations! Have fun ! ^-^ \n", DB_NAME);
     char **result = NULL;
     snprintf(sql, sizeof(sql), "SELECT * FROM players;");
     r = sqlite3_get_table(db, sql, &result, &rows, &column, &zTail);
-    if (0 != r)
+    if (SQLITE_OK != r)
     {
         printf("[Error]: %s\n", zTail);
         goto FINISH;
