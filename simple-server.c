@@ -2,6 +2,7 @@
  * author: dengzhaoqun
  * date: 2011/07/21
  * platform: linux
+ * gcc simple-server.c -o simple-server
  */
 #include <sys/select.h>
 #include <stdio.h>
@@ -23,7 +24,7 @@ int recv_new(int fd, char *str);
 void send_new(int fd, char *str);
 int get_file_size(int fd);
 
-int main()
+int main(int argc, char *argv[])
 {
     int ser_fd, cli_fd, max_fd, fd;
     struct sockaddr_in ser_addr;
@@ -31,7 +32,6 @@ int main()
     int ser_addr_len, cli_addr_len;
     fd_set readfds, master;
     int ret;
-
 
     ser_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(ser_fd == -1)
@@ -99,8 +99,6 @@ int main()
     }
 
 }/* main() */
-
-
 
 void
 connection(int fd)
@@ -172,7 +170,6 @@ connection(int fd)
     }
 }/* connection() */
 
-
 void
 send_new(int fd, char *str)
 {
@@ -214,3 +211,4 @@ recv_new(int fd, char *str)
 
     return(strlen(str));
 }/* recv_new() */
+
