@@ -6,7 +6,7 @@
 #define FORMAT_HTML "html"
 #define FORMAT_JSON "json"
 
-#define _DEBUG  0
+#define _DEBUG  1
 #define DAEMON  1
 
 #define DEFAULT_LINK_LENGTH 1024
@@ -46,7 +46,7 @@
 #define QUERY_LEN   512
 #define BRIEF_LEN   1024 * 10
 #define TPL_BUF_LEN 1024 * 80
-#define READ_LINE_BUF_LEN   2048
+#define READ_LINE_BUF_LEN   1024 * 10
 #define SEPARATOR   "\t"
 
 typedef struct _config_t
