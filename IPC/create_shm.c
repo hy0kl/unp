@@ -66,6 +66,11 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "Begin to shmat().\n");
     shm_pp = (shm_item_t **)shmat(shm_id, NULL, 0);
+    if (NULL == shm_pp)
+    {
+        fprintf(stderr, "can NOT shmat() memory.\n");
+        exit(-3);
+    }
     tmp = 'a';
     for (i = 0; i < SHM_ITEM_NUM; i++)
     {
