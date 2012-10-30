@@ -65,19 +65,18 @@ int main(int argc, char *argv[])
     }
 
     fprintf(stderr, "Begin to shmat().\n");
-    shm_pp = (shm_item_t **)shmat(shm_id, NULL, 0);
+    shm_pp = (shm_item_t**)shmat(shm_id, NULL, 0);
     tmp = 'a';
     for (i = 0; i < SHM_ITEM_NUM; i++)
     {
-        shm_p = (shm_item_t *)(shm_pp + i);
+        shm_p = shm_pp + i;
         fprintf(stderr, "create %d for shm.\n", i);
-        fprintf(stderr, "char is [%c]\n", tmp);
+        tmp += 1;
         shm_p->shm_id = i;
         snprintf(shm_p->cache, sizeof(shm_p->cache), "I am is: [%c]\n", tmp);
-        tmp += 1;
     }
 
-    if (shmdt(shm_pp) == -1)
+    if (shmdt(shm_p) == -1)
         perror(" detach error ");
 
     return 0;
