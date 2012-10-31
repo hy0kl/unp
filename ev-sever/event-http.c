@@ -986,8 +986,7 @@ int main(int argc, char** argv)
         case 'm':   /** lua html tpl */
             break;
 
-            case 'v':
-
+        case 'v':
         case 'h':
             usage();
             exit(EXIT_SUCCESS);
