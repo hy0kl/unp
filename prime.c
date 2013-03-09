@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     static const int MAX_HASH_NUM = (1ULL << 31) - 1;
     int prime_number[] = {1, 2, 3, 5, 7,
                           11, 13, 17, 19, 23,
-                          29, 31, 0};
+                          29, 31, 37, 0};
     int i = 0;
     int k = 0;
     int count = 0;
